@@ -4,15 +4,15 @@ import websockets
 import json
 from decimal import Decimal
 
-SYMBOL = "BTCUSDT"
-SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=1000"
+SYMBOL = "BTCUSDC"
+SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=5000"
 WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@depth@100ms"
 
 order_book = {'bids': {}, 'asks': {}}
 last_update_id = None
 
 
-def aggregate_liquidity(step_percent=0.01, max_percent=0.2):
+def aggregate_liquidity(step_percent=0.01, max_percent=0.08):
     """Aggregate liquidity at steps above/below best bid/ask."""
     if not order_book['bids'] or not order_book['asks']:
         return
@@ -20,26 +20,17 @@ def aggregate_liquidity(step_percent=0.01, max_percent=0.2):
     best_bid = max(order_book['bids'])
     best_ask = min(order_book['asks'])
 
-    print("\nAggregated liquidity:")
+    print("")
+    print(f"Best Bid Ask {best_bid} / {best_ask}")
 
-    # Bids aggregation
-    print("Bids:")
-    p = 0
+    p = 0 + 0.00001
     while p <= max_percent:
-        threshold = best_bid * (1 - Decimal(p / 100))
-        liquidity = sum(q for price, q in order_book['bids'].items() if price >= threshold)
-        print(f"{p:.2f}% below best bid: {liquidity}")
+        threshold_bid = best_bid * (1 - Decimal(p / 100))
+        threshold_ask = best_ask * (1 + Decimal(p / 100))
+        liquidity_bid = sum(q for price, q in order_book['bids'].items() if price >= threshold_bid)
+        liquidity_ask = sum(q for price, q in order_book['asks'].items() if price <= threshold_ask)
+        print(f"{p:.2f}% bid: {liquidity_bid} / {liquidity_ask}")
         p += step_percent
-
-    # Asks aggregation
-    print("Asks:")
-    p = 0
-    while p <= max_percent:
-        threshold = best_ask * (1 + Decimal(p / 100))
-        liquidity = sum(q for price, q in order_book['asks'].items() if price <= threshold)
-        print(f"{p:.2f}% above best ask: {liquidity}")
-        p += step_percent
-
 
 async def fetch_snapshot():
     """Fetch snapshot and normalize keys to 'b' and 'a'."""
@@ -81,6 +72,10 @@ async def handle_ws():
                     if last_update_id is None or data['U'] > last_update_id + 1:
                         print("Missed updates, resyncing snapshot...")
                         await fetch_snapshot()
+                        continue
+
+                    if data['U'] < last_update_id + 1:
+                        print("ignore past update")
                         continue
 
                     last_update_id = data['u']
