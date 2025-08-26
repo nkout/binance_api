@@ -3,6 +3,9 @@ import aiohttp
 import websockets
 import json
 from decimal import Decimal
+import multiprocessing as mp
+import numpy as np
+
 
 SYMBOL = "BTCUSDC"
 SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=5000"
@@ -12,7 +15,7 @@ order_book = {'bids': {}, 'asks': {}}
 last_update_id = None
 
 
-def aggregate_liquidity(step_percent=0.01, max_percent=0.08):
+def aggregate_liquidity(update_queue, step_percent=0.005, max_percent=0.08):
     """Aggregate liquidity at steps above/below best bid/ask."""
     if not order_book['bids'] or not order_book['asks']:
         return
@@ -20,8 +23,10 @@ def aggregate_liquidity(step_percent=0.01, max_percent=0.08):
     best_bid = max(order_book['bids'])
     best_ask = min(order_book['asks'])
 
-    print("")
-    print(f"Best Bid Ask {best_bid} / {best_ask}")
+    out = {}
+    out['bbid'] = float(best_bid)
+    out['bask'] = float(best_ask)
+    #out['liq'] = []
 
     p = 0 + 0.00001
     while p <= max_percent:
@@ -29,8 +34,9 @@ def aggregate_liquidity(step_percent=0.01, max_percent=0.08):
         threshold_ask = best_ask * (1 + Decimal(p / 100))
         liquidity_bid = sum(q for price, q in order_book['bids'].items() if price >= threshold_bid)
         liquidity_ask = sum(q for price, q in order_book['asks'].items() if price <= threshold_ask)
-        print(f"{p:.2f}% bid: {liquidity_bid} / {liquidity_ask}")
+        #out['liq'].append([liquidity_bid, liquidity_ask])
         p += step_percent
+    update_queue.put(out)
 
 async def fetch_snapshot():
     """Fetch snapshot and normalize keys to 'b' and 'a'."""
@@ -57,7 +63,7 @@ async def fetch_snapshot():
             attempt += 1
 
 
-async def handle_ws():
+async def handle_ws(update_queue):
     global order_book, last_update_id
     while True:
         try:
@@ -98,16 +104,53 @@ async def handle_ws():
                         else:
                             order_book['asks'][price] = qty
 
-                    aggregate_liquidity()
+                    aggregate_liquidity(update_queue)
         except Exception as e:
             print(f"WebSocket disconnected, retrying... {e}")
             await asyncio.sleep(2)
 
 
-async def main():
+async def main(update_queue):
     await fetch_snapshot()
-    await handle_ws()
+    await handle_ws(update_queue)
 
+def producer(queue):
+    asyncio.run(main(queue))
+
+def consumer(update_queue):
+    """
+    Process B: reads best bid/ask from queue and calculates liquidity
+    """
+    stats = {}
+    stats["bbid"] = []
+    while True:
+        try:
+            update = update_queue.get(timeout=5)
+            stats["bbid"].append(update['bbid'])
+            if len(stats["bbid"]) > 20:
+                arr = np.array(stats["bbid"])
+                min_val = np.min(arr)
+                max_val = np.max(arr)
+                mean_val = np.mean(arr)
+                median_val = np.median(arr)
+                q25 = np.percentile(arr, 25)
+                q50 = np.percentile(arr, 50)  # same as median
+                q75 = np.percentile(arr, 75)
+                stats_list = [min_val, max_val, mean_val, median_val, q25, q50, q75]
+                print("Stats:", stats_list)
+
+                stats["bbid"] = []
+
+
+            # Here you can add liquidity calculations
+        except Exception:
+            print("No update received in 5s")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    q = mp.Queue()
+    p1 = mp.Process(target=producer, args=(q,))
+    p2 = mp.Process(target=consumer, args=(q,))
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
