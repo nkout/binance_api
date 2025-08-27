@@ -173,7 +173,7 @@ def stats_header():
     return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
 
 def print_header():
-    header = []
+    header = ['timestamp']
     header += ['bid_'+x for x in stats_header()]
     header += ['ask_' + x for x in stats_header()]
     header += ['spread_' + x for x in stats_header()]
@@ -189,8 +189,8 @@ def print_header():
 
     return header
 
-def print_stats(stats):
-    line = []
+def print_stats(now, stats):
+    line = [str(int(now.timestamp() * 1000))]
     line += calc_stats(stats["best_prices"][0])
     line += calc_stats(stats["best_prices"][1])
     line += calc_stats(stats["best_prices"][2])
@@ -229,7 +229,7 @@ def stats_calculator(update_queue):
                         print(print_header())
                         writer.writerow(print_header())
                         header_printed = True
-                    line = print_stats(stats)
+                    line = print_stats(now, stats)
                     print(line)
                     writer.writerow(line)
                     reset_stats(stats)
