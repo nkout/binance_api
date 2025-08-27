@@ -5,17 +5,23 @@ import json
 from decimal import Decimal
 import multiprocessing as mp
 import numpy as np
-
+import datetime
+import csv
 
 SYMBOL = "BTCUSDC"
 SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=5000"
 WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@depth@100ms"
+outfile="out.txt"
 
 order_book = {'bids': {}, 'asks': {}}
 last_update_id = None
+tolerance = 0.000001
+step_percent=0.005
+max_percent=0.010
+window_msec = 15000
 
 
-def aggregate_liquidity(update_queue, step_percent=0.005, max_percent=0.08):
+def aggregate_liquidity(update_queue, step_percent, max_percent):
     """Aggregate liquidity at steps above/below best bid/ask."""
     if not order_book['bids'] or not order_book['asks']:
         return
@@ -24,19 +30,19 @@ def aggregate_liquidity(update_queue, step_percent=0.005, max_percent=0.08):
     best_ask = min(order_book['asks'])
 
     out = {}
-    out['bbid'] = float(best_bid)
-    out['bask'] = float(best_ask)
-    #out['liq'] = []
+    out['best_prices'] = [float(best_bid), float(best_ask)]
+    out['liq_levels'] = []
 
-    p = 0 + 0.00001
-    while p <= max_percent:
-        threshold_bid = best_bid * (1 - Decimal(p / 100))
-        threshold_ask = best_ask * (1 + Decimal(p / 100))
+    p = 0.0
+    while p <= max_percent + tolerance:
+        threshold_bid = best_bid * (1 - Decimal((p + tolerance)/ 100))
+        threshold_ask = best_ask * (1 + Decimal((p + tolerance)/ 100))
         liquidity_bid = sum(q for price, q in order_book['bids'].items() if price >= threshold_bid)
         liquidity_ask = sum(q for price, q in order_book['asks'].items() if price <= threshold_ask)
-        #out['liq'].append([liquidity_bid, liquidity_ask])
+        out['liq_levels'].append([float(liquidity_bid), float(liquidity_ask)])
         p += step_percent
     update_queue.put(out)
+    #print(out)
 
 async def fetch_snapshot():
     """Fetch snapshot and normalize keys to 'b' and 'a'."""
@@ -104,52 +110,138 @@ async def handle_ws(update_queue):
                         else:
                             order_book['asks'][price] = qty
 
-                    aggregate_liquidity(update_queue)
+                    aggregate_liquidity(update_queue, step_percent, max_percent)
         except Exception as e:
             print(f"WebSocket disconnected, retrying... {e}")
             await asyncio.sleep(2)
 
 
-async def main(update_queue):
+async def subscribe_orderbook(update_queue):
     await fetch_snapshot()
     await handle_ws(update_queue)
 
-def producer(queue):
-    asyncio.run(main(queue))
+def orderbook_subscriber(queue):
+    asyncio.run(subscribe_orderbook(queue))
 
-def consumer(update_queue):
+def init_stats(stats):
+    stats["best_prices"] = [[],[],[]]
+    stats['liq_levels'] = []
+    p = 0.0
+    while p <= max_percent + tolerance:
+        stats['liq_levels'].append([[],[],[]])
+        p += step_percent
+
+def update_stats(stats, update):
+    stats["best_prices"][0].append(update['best_prices'][0])
+    stats["best_prices"][1].append(update['best_prices'][1])
+    stats["best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
+
+    p = 0.0
+    c = 0
+    while p <= max_percent + tolerance:
+        stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
+        stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
+        stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
+        p += step_percent
+        c += 1
+
+def reset_stats(stats):
+    stats["best_prices"][0].clear()
+    stats["best_prices"][1].clear()
+    stats["best_prices"][2].clear()
+
+    p = 0.0
+    c = 0
+    while p <= max_percent + tolerance:
+        stats['liq_levels'][c][0].clear()
+        stats['liq_levels'][c][1].clear()
+        stats['liq_levels'][c][2].clear()
+        p += step_percent
+        c += 1
+
+def calc_stats(line):
+    arr = np.array(line)
+    min_val = np.min(arr).item()
+    max_val = np.max(arr).item()
+    mean_val = np.mean(arr).item()
+    q25 = np.percentile(arr, 25).item()
+    q50 = np.percentile(arr, 50).item()
+    q75 = np.percentile(arr, 75).item()
+    return [len(line), line[0], line[-1], mean_val, min_val,  q25, q50, q75, max_val]
+
+def stats_header():
+    return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
+
+def print_header():
+    header = []
+    header += ['bid_'+x for x in stats_header()]
+    header += ['ask_' + x for x in stats_header()]
+    header += ['spread_' + x for x in stats_header()]
+
+    p = 0.0
+    c = 0
+    while p <= max_percent + tolerance:
+        header += [f'bid_liq_{p:.4}_' + x for x in stats_header()]
+        header += [f'ask_liq_{p:.4}_' + x for x in stats_header()]
+        header += [f'diff_liq_{p:.4}_'  + x for x in stats_header()]
+        p += step_percent
+        c += 1
+
+    return header
+
+def print_stats(stats):
+    line = []
+    line += calc_stats(stats["best_prices"][0])
+    line += calc_stats(stats["best_prices"][1])
+    line += calc_stats(stats["best_prices"][2])
+
+    p = 0.0
+    c = 0
+    while p <= max_percent + tolerance:
+        line += calc_stats(stats['liq_levels'][c][0])
+        line += calc_stats(stats['liq_levels'][c][1])
+        line += calc_stats(stats['liq_levels'][c][2])
+        p += step_percent
+        c += 1
+
+    return line
+
+def stats_calculator(update_queue):
     """
     Process B: reads best bid/ask from queue and calculates liquidity
     """
     stats = {}
-    stats["bbid"] = []
-    while True:
-        try:
-            update = update_queue.get(timeout=5)
-            stats["bbid"].append(update['bbid'])
-            if len(stats["bbid"]) > 20:
-                arr = np.array(stats["bbid"])
-                min_val = np.min(arr)
-                max_val = np.max(arr)
-                mean_val = np.mean(arr)
-                median_val = np.median(arr)
-                q25 = np.percentile(arr, 25)
-                q50 = np.percentile(arr, 50)  # same as median
-                q75 = np.percentile(arr, 75)
-                stats_list = [min_val, max_val, mean_val, median_val, q25, q50, q75]
-                print("Stats:", stats_list)
+    init_stats(stats)
+    header_printed = False
 
-                stats["bbid"] = []
+    last_print = datetime.datetime.now()
 
+    with open(outfile, "w") as f:
+        writer = csv.writer(f, delimiter=';')
+        while True:
+            try:
+                update = update_queue.get(timeout=5)
+                update_stats(stats, update)
+                now = datetime.datetime.now()
 
-            # Here you can add liquidity calculations
-        except Exception:
-            print("No update received in 5s")
+                if (now - last_print).total_seconds() * 1000 > window_msec:
+                    if not header_printed:
+                        print(print_header())
+                        writer.writerow(print_header())
+                        header_printed = True
+                    line = print_stats(stats)
+                    print(line)
+                    writer.writerow(line)
+                    reset_stats(stats)
+                    last_print = now
+                # Here you can add liquidity calculations
+            except Exception:
+                print("No update received in 5s")
 
 if __name__ == "__main__":
     q = mp.Queue()
-    p1 = mp.Process(target=producer, args=(q,))
-    p2 = mp.Process(target=consumer, args=(q,))
+    p1 = mp.Process(target=orderbook_subscriber, args=(q,))
+    p2 = mp.Process(target=stats_calculator, args=(q,))
     p1.start()
     p2.start()
     p1.join()
