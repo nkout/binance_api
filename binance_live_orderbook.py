@@ -9,17 +9,22 @@ import datetime
 import csv
 import signal
 import sys
+from collections import deque
+import time
 
 SYMBOL = "BTCUSDC"
 SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=5000"
-WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@depth@100ms"
+PRICES_WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@depth@100ms"
+TRADE_WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@trade"
 outfile="out.txt"
 
+trade_buffer = deque()
 order_book = {'bids': {}, 'asks': {}}
-last_update_id = None
+last_orderbook_update_id = None
 tolerance = 0.000001
 liq_steps = [x * 0.005 for x in range(5)]
 window_sec = 15
+TRADE_AGG_INTERVAL = 0.1  # seconds (100ms)
 
 processes = []
 
@@ -47,7 +52,7 @@ def aggregate_liquidity(update_queue, liq_steps):
 
 async def fetch_snapshot():
     """Fetch snapshot and normalize keys to 'b' and 'a'."""
-    global order_book, last_update_id
+    global order_book, last_orderbook_update_id
     attempt = 1
     while True:
         try:
@@ -61,7 +66,7 @@ async def fetch_snapshot():
                         raise KeyError("'b' or 'a' missing in snapshot data")
                     order_book['bids'] = {Decimal(p): Decimal(q) for p, q in bids}
                     order_book['asks'] = {Decimal(p): Decimal(q) for p, q in asks}
-                    last_update_id = data['lastUpdateId']
+                    last_orderbook_update_id = data['lastUpdateId']
                     print(f"Snapshot loaded: {len(order_book['bids'])} bids, {len(order_book['asks'])} asks")
                     return
         except Exception as e:
@@ -70,28 +75,28 @@ async def fetch_snapshot():
             attempt += 1
 
 
-async def handle_ws(update_queue):
-    global order_book, last_update_id
+async def handle_orderbook_ws(update_queue):
+    global order_book, last_orderbook_update_id
     while True:
         try:
-            async with websockets.connect(WS_URL) as ws:
-                print("WebSocket connected")
+            async with websockets.connect(PRICES_WS_URL) as ws:
+                print("Orderbook WebSocket connected")
                 async for message in ws:
                     data = json.loads(message)
                     if 'u' not in data or 'U' not in data:
                         continue
 
                     # Resync if missed updates
-                    if last_update_id is None or data['U'] > last_update_id + 1:
+                    if last_orderbook_update_id is None or data['U'] > last_orderbook_update_id + 1:
                         print("Missed updates, resyncing snapshot...")
                         await fetch_snapshot()
                         continue
 
-                    if data['u'] < last_update_id + 1:
+                    if data['u'] < last_orderbook_update_id + 1:
                         print("ignore past update")
                         continue
 
-                    last_update_id = data['u']
+                    last_orderbook_update_id = data['u']
 
                     # Update bids
                     for price_str, qty_str in data.get('b', []):
@@ -116,16 +121,16 @@ async def handle_ws(update_queue):
             print(f"WebSocket disconnected, retrying... {e}")
             await asyncio.sleep(2)
 
-def subscribe_orderbook_shutdown():
+def subscriber_shutdown():
     sys.exit(0)
 
 async def subscribe_orderbook(update_queue):
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, subscribe_orderbook_shutdown)
+        loop.add_signal_handler(sig, subscriber_shutdown)
 
     await fetch_snapshot()
-    await handle_ws(update_queue)
+    await handle_orderbook_ws(update_queue)
 
     while True:
         await asyncio.sleep(1)
@@ -133,11 +138,80 @@ async def subscribe_orderbook(update_queue):
 def orderbook_subscriber(queue):
     asyncio.run(subscribe_orderbook(queue))
 
+async def trade_ws():
+    global trade_buffer
+    latest_id = 0
+    while True:
+        try:
+            async with websockets.connect(TRADE_WS_URL) as ws:
+                print("Connected to trade stream")
+                async for message in ws:
+                    data = json.loads(message)
+                    price = Decimal(data['p'])
+                    qty = Decimal(data['q'])
+                    is_buyer_maker = data['m']  # True = sell, False = buy
+                    if latest_id > 0 and data['t'] != latest_id + 1:
+                        print("gap......")
+                    latest_id  = data['t']
+                    trade_buffer.append((price, qty, is_buyer_maker))
+        except Exception as e:
+            print(f"Trade WebSocket error: {e}, reconnecting in 2s...")
+            await asyncio.sleep(2)
+
+async def trade_aggregator(update_queue):
+    global trade_buffer
+    while True:
+        await asyncio.sleep(TRADE_AGG_INTERVAL)
+        if not trade_buffer:
+            continue
+
+        total_buy = Decimal(0)
+        total_sell = Decimal(0)
+        total_buy_amount = Decimal(0)
+        total_sell_amount = Decimal(0)
+        total_volume = Decimal(0)
+
+        out = {'type': 'trade'}
+        buy_samples = 0
+        sell_samples = 0
+        while trade_buffer:
+            price, qty, is_buyer_maker = trade_buffer.popleft()
+            total_volume += qty
+            if is_buyer_maker:  # Sell
+                total_sell += qty
+                total_sell_amount += price * qty
+                buy_samples += 1
+            else:  # Buy
+                total_buy += qty
+                total_buy_amount += price * qty
+                sell_samples += 1
+        out['buy_qty'] = float(total_buy)
+        out['sell_qty'] = float(total_sell)
+        out['buy_amount'] = float(total_buy_amount)
+        out['sell_amount'] = float(total_sell_amount)
+        out['buy_samples'] = buy_samples
+        out['sell_samples'] = sell_samples
+        update_queue.put(out)
+
+async def subscribe_trade(update_queue):
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, subscriber_shutdown)
+
+    await asyncio.gather(trade_ws(), trade_aggregator(update_queue))
+
+    while True:
+        await asyncio.sleep(1)
+
+def trade_subscriber(queue):
+    asyncio.run(subscribe_trade(queue))
+
 def init_stats(stats):
     stats["best_prices"] = [[],[],[]]
     stats['liq_levels'] = []
     for p in liq_steps:
         stats['liq_levels'].append([[],[],[]])
+    stats['trades'] = [[],[],[],[],[],[]]
 
 def update_stats(stats, update):
     if update['type'] == 'prices':
@@ -149,6 +223,13 @@ def update_stats(stats, update):
             stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
             stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
             stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
+    elif update['type'] == 'trade':
+        stats["trades"][0].append(update['buy_qty'])
+        stats["trades"][1].append(update['sell_qty'])
+        stats["trades"][2].append(update['buy_amount'])
+        stats["trades"][3].append(update['sell_amount'])
+        stats["trades"][4].append(update['buy_samples'])
+        stats["trades"][5].append(update['sell_samples'])
     else:
         print('wrong update type')
 
@@ -161,6 +242,13 @@ def reset_stats(stats):
         stats['liq_levels'][c][0].clear()
         stats['liq_levels'][c][1].clear()
         stats['liq_levels'][c][2].clear()
+
+    stats["trades"][0].clear()
+    stats["trades"][1].clear()
+    stats["trades"][2].clear()
+    stats["trades"][3].clear()
+    stats["trades"][4].clear()
+    stats["trades"][5].clear()
 
 def calc_stats(line):
     arr = np.array(line)
@@ -177,10 +265,10 @@ def stats_header():
 
 def get_header():
     header = ['datetime', 'timestamp']
+    header += ['buy_samples', 'sell_samples', 'buy_qty', 'sell_qty', 'buy_vwap', 'sell_vwap']
     header += ['bid_'+x for x in stats_header()]
     header += ['ask_' + x for x in stats_header()]
     header += ['spread_' + x for x in stats_header()]
-
 
     for c, p in enumerate(liq_steps):
         header += [f'bid_liq_{p:.4}_' + x for x in stats_header()]
@@ -190,10 +278,17 @@ def get_header():
     return header
 
 def get_stats(now, stats):
-    if len(stats["best_prices"][0]) == 0:
+    if len(stats["best_prices"][0]) == 0 or len(stats["trades"][0]) == 0:
         return None
 
     line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
+
+    buy_qty = sum(stats["trades"][0])
+    sell_qty = sum(stats["trades"][1])
+    buy_vwap = sum(stats["trades"][2]) / buy_qty if buy_qty > tolerance else 0.0
+    sell_vwap = sum(stats["trades"][3]) / sell_qty if sell_qty > tolerance else 0.0
+    line += [sum(stats["trades"][4]), sum(stats["trades"][5]), buy_qty, sell_qty, buy_vwap, sell_vwap]
+
     line += calc_stats(stats["best_prices"][0])
     line += calc_stats(stats["best_prices"][1])
     line += calc_stats(stats["best_prices"][2])
@@ -268,13 +363,16 @@ async def my_main():
 
     q = mp.Queue()
     p1 = mp.Process(target=orderbook_subscriber, args=(q,))
-    p2 = mp.Process(target=stats_calculator, args=(q,))
+    p2 = mp.Process(target=trade_subscriber, args=(q,))
+    p3 = mp.Process(target=stats_calculator, args=(q,))
 
     processes.append(p1)
     processes.append(p2)
+    processes.append(p3)
 
     p1.start()
     p2.start()
+    p3.start()
 
     # just idle until stopped
     while True:
