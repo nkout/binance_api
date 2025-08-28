@@ -16,12 +16,11 @@ outfile="out.txt"
 order_book = {'bids': {}, 'asks': {}}
 last_update_id = None
 tolerance = 0.000001
-step_percent=0.005
-max_percent=0.010
-window_msec = 15000
+liq_steps = [x * 0.005 for x in range(5)]
+window_sec = 15
 
 
-def aggregate_liquidity(update_queue, step_percent, max_percent):
+def aggregate_liquidity(update_queue, liq_steps):
     """Aggregate liquidity at steps above/below best bid/ask."""
     if not order_book['bids'] or not order_book['asks']:
         return
@@ -33,14 +32,13 @@ def aggregate_liquidity(update_queue, step_percent, max_percent):
     out['best_prices'] = [float(best_bid), float(best_ask)]
     out['liq_levels'] = []
 
-    p = 0.0
-    while p <= max_percent + tolerance:
+    for p in liq_steps:
         threshold_bid = best_bid * (1 - Decimal((p + tolerance)/ 100))
         threshold_ask = best_ask * (1 + Decimal((p + tolerance)/ 100))
         liquidity_bid = sum(q for price, q in order_book['bids'].items() if price >= threshold_bid)
         liquidity_ask = sum(q for price, q in order_book['asks'].items() if price <= threshold_ask)
         out['liq_levels'].append([float(liquidity_bid), float(liquidity_ask)])
-        p += step_percent
+
     update_queue.put(out)
     #print(out)
 
@@ -86,7 +84,7 @@ async def handle_ws(update_queue):
                         await fetch_snapshot()
                         continue
 
-                    if data['U'] < last_update_id + 1:
+                    if data['u'] < last_update_id + 1:
                         print("ignore past update")
                         continue
 
@@ -110,7 +108,7 @@ async def handle_ws(update_queue):
                         else:
                             order_book['asks'][price] = qty
 
-                    aggregate_liquidity(update_queue, step_percent, max_percent)
+                    aggregate_liquidity(update_queue, liq_steps)
         except Exception as e:
             print(f"WebSocket disconnected, retrying... {e}")
             await asyncio.sleep(2)
@@ -126,38 +124,28 @@ def orderbook_subscriber(queue):
 def init_stats(stats):
     stats["best_prices"] = [[],[],[]]
     stats['liq_levels'] = []
-    p = 0.0
-    while p <= max_percent + tolerance:
+    for p in liq_steps:
         stats['liq_levels'].append([[],[],[]])
-        p += step_percent
 
 def update_stats(stats, update):
     stats["best_prices"][0].append(update['best_prices'][0])
     stats["best_prices"][1].append(update['best_prices'][1])
     stats["best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
 
-    p = 0.0
-    c = 0
-    while p <= max_percent + tolerance:
+    for c, p in enumerate(liq_steps):
         stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
         stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
         stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
-        p += step_percent
-        c += 1
 
 def reset_stats(stats):
     stats["best_prices"][0].clear()
     stats["best_prices"][1].clear()
     stats["best_prices"][2].clear()
 
-    p = 0.0
-    c = 0
-    while p <= max_percent + tolerance:
+    for c, p in enumerate(liq_steps):
         stats['liq_levels'][c][0].clear()
         stats['liq_levels'][c][1].clear()
         stats['liq_levels'][c][2].clear()
-        p += step_percent
-        c += 1
 
 def calc_stats(line):
     arr = np.array(line)
@@ -173,38 +161,38 @@ def stats_header():
     return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
 
 def print_header():
-    header = ['timestamp']
+    header = ['datetime', 'timestamp']
     header += ['bid_'+x for x in stats_header()]
     header += ['ask_' + x for x in stats_header()]
     header += ['spread_' + x for x in stats_header()]
 
-    p = 0.0
-    c = 0
-    while p <= max_percent + tolerance:
+
+    for c, p in enumerate(liq_steps):
         header += [f'bid_liq_{p:.4}_' + x for x in stats_header()]
         header += [f'ask_liq_{p:.4}_' + x for x in stats_header()]
         header += [f'diff_liq_{p:.4}_'  + x for x in stats_header()]
-        p += step_percent
-        c += 1
 
     return header
 
 def print_stats(now, stats):
-    line = [str(int(now.timestamp() * 1000))]
+    line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
     line += calc_stats(stats["best_prices"][0])
     line += calc_stats(stats["best_prices"][1])
     line += calc_stats(stats["best_prices"][2])
 
-    p = 0.0
-    c = 0
-    while p <= max_percent + tolerance:
+    for c, p in enumerate(liq_steps):
         line += calc_stats(stats['liq_levels'][c][0])
         line += calc_stats(stats['liq_levels'][c][1])
         line += calc_stats(stats['liq_levels'][c][2])
-        p += step_percent
-        c += 1
 
     return line
+
+def round_to_interval(dt, seconds):
+    # Convert to seconds since epoch
+    epoch = dt.timestamp()
+    # Floor to nearest interval
+    rounded = (epoch // seconds) * seconds
+    return datetime.datetime.fromtimestamp(rounded, tz=dt.tzinfo)
 
 def stats_calculator(update_queue):
     """
@@ -214,27 +202,27 @@ def stats_calculator(update_queue):
     init_stats(stats)
     header_printed = False
 
-    last_print = datetime.datetime.now()
+    last_print = round_to_interval(datetime.datetime.now(), window_sec)
 
     with open(outfile, "w") as f:
         writer = csv.writer(f, delimiter=';')
         while True:
             try:
                 update = update_queue.get(timeout=5)
-                update_stats(stats, update)
                 now = datetime.datetime.now()
 
-                if (now - last_print).total_seconds() * 1000 > window_msec:
+                if (now - last_print).total_seconds() > window_sec + tolerance:
                     if not header_printed:
                         print(print_header())
                         writer.writerow(print_header())
                         header_printed = True
-                    line = print_stats(now, stats)
+                    line = print_stats(last_print, stats)
                     print(line)
                     writer.writerow(line)
                     reset_stats(stats)
-                    last_print = now
-                # Here you can add liquidity calculations
+                    last_print = round_to_interval(now, window_sec)
+
+                update_stats(stats, update)
             except Exception:
                 print("No update received in 5s")
 
