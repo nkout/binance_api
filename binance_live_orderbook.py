@@ -7,6 +7,8 @@ import multiprocessing as mp
 import numpy as np
 import datetime
 import csv
+import signal
+import sys
 
 SYMBOL = "BTCUSDC"
 SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=5000"
@@ -19,6 +21,7 @@ tolerance = 0.000001
 liq_steps = [x * 0.005 for x in range(5)]
 window_sec = 15
 
+processes = []
 
 def aggregate_liquidity(update_queue, liq_steps):
     """Aggregate liquidity at steps above/below best bid/ask."""
@@ -113,10 +116,19 @@ async def handle_ws(update_queue):
             print(f"WebSocket disconnected, retrying... {e}")
             await asyncio.sleep(2)
 
+def subscribe_orderbook_shutdown():
+    sys.exit(0)
 
 async def subscribe_orderbook(update_queue):
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, subscribe_orderbook_shutdown)
+
     await fetch_snapshot()
     await handle_ws(update_queue)
+
+    while True:
+        await asyncio.sleep(1)
 
 def orderbook_subscriber(queue):
     asyncio.run(subscribe_orderbook(queue))
@@ -200,21 +212,28 @@ def round_to_interval(dt, seconds):
     rounded = (epoch // seconds) * seconds
     return datetime.datetime.fromtimestamp(rounded, tz=dt.tzinfo)
 
+def stats_calculator_shutdown(sig, frame=None):
+    sys.exit(0)
+
 def stats_calculator(update_queue):
     """
     Process B: reads best bid/ask from queue and calculates liquidity
     """
+    signal.signal(signal.SIGINT, stats_calculator_shutdown)
+    signal.signal(signal.SIGTERM, stats_calculator_shutdown)
+
     stats = {}
     init_stats(stats)
     header_printed = False
+    exit_received = False
 
     last_print = round_to_interval(datetime.datetime.now(), window_sec)
 
     with open(outfile, "w") as f:
         writer = csv.writer(f, delimiter=';')
-        while True:
+        while not exit_received:
             try:
-                update = update_queue.get(timeout=5)
+                update = update_queue.get(timeout=1)
                 now = datetime.datetime.now()
 
                 if (now - last_print).total_seconds() > window_sec + tolerance:
@@ -230,14 +249,36 @@ def stats_calculator(update_queue):
                     last_print = round_to_interval(now, window_sec)
 
                 update_stats(stats, update)
+            except KeyboardInterrupt:
+                exit_received = True
             except Exception as e:
                 print(f"stats calculation exception: {e}")
 
-if __name__ == "__main__":
+def my_main_shutdown():
+    print("Shutting down all processes...")
+    for p in processes:
+        if p.is_alive():
+            p.terminate()
+    sys.exit(0)
+
+async def my_main():
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, my_main_shutdown)
+
     q = mp.Queue()
     p1 = mp.Process(target=orderbook_subscriber, args=(q,))
     p2 = mp.Process(target=stats_calculator, args=(q,))
+
+    processes.append(p1)
+    processes.append(p2)
+
     p1.start()
     p2.start()
-    p1.join()
-    p2.join()
+
+    # just idle until stopped
+    while True:
+        await asyncio.sleep(1)
+
+if __name__ == "__main__":
+    asyncio.run(my_main())
