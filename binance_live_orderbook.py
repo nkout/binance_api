@@ -28,7 +28,7 @@ def aggregate_liquidity(update_queue, liq_steps):
     best_bid = max(order_book['bids'])
     best_ask = min(order_book['asks'])
 
-    out = {}
+    out = {'type': 'prices'}
     out['best_prices'] = [float(best_bid), float(best_ask)]
     out['liq_levels'] = []
 
@@ -128,14 +128,17 @@ def init_stats(stats):
         stats['liq_levels'].append([[],[],[]])
 
 def update_stats(stats, update):
-    stats["best_prices"][0].append(update['best_prices'][0])
-    stats["best_prices"][1].append(update['best_prices'][1])
-    stats["best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
+    if update['type'] == 'prices':
+        stats["best_prices"][0].append(update['best_prices'][0])
+        stats["best_prices"][1].append(update['best_prices'][1])
+        stats["best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
 
-    for c, p in enumerate(liq_steps):
-        stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
-        stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
-        stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
+        for c, p in enumerate(liq_steps):
+            stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
+            stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
+            stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
+    else:
+        print('wrong update type')
 
 def reset_stats(stats):
     stats["best_prices"][0].clear()
@@ -160,7 +163,7 @@ def calc_stats(line):
 def stats_header():
     return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
 
-def print_header():
+def get_header():
     header = ['datetime', 'timestamp']
     header += ['bid_'+x for x in stats_header()]
     header += ['ask_' + x for x in stats_header()]
@@ -174,7 +177,10 @@ def print_header():
 
     return header
 
-def print_stats(now, stats):
+def get_stats(now, stats):
+    if len(stats["best_prices"][0]) == 0:
+        return None
+
     line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
     line += calc_stats(stats["best_prices"][0])
     line += calc_stats(stats["best_prices"][1])
@@ -213,18 +219,19 @@ def stats_calculator(update_queue):
 
                 if (now - last_print).total_seconds() > window_sec + tolerance:
                     if not header_printed:
-                        print(print_header())
-                        writer.writerow(print_header())
+                        print(get_header())
+                        writer.writerow(get_header())
                         header_printed = True
-                    line = print_stats(last_print, stats)
-                    print(line)
-                    writer.writerow(line)
+                    line = get_stats(last_print, stats)
+                    if line:
+                        print(line)
+                        writer.writerow(line)
                     reset_stats(stats)
                     last_print = round_to_interval(now, window_sec)
 
                 update_stats(stats, update)
-            except Exception:
-                print("No update received in 5s")
+            except Exception as e:
+                print(f"stats calculation exception: {e}")
 
 if __name__ == "__main__":
     q = mp.Queue()
