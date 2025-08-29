@@ -22,7 +22,7 @@ trade_buffer = deque()
 order_book = {'bids': {}, 'asks': {}}
 last_orderbook_update_id = None
 tolerance = 0.000001
-liq_steps = [x * 0.005 for x in range(5)]
+liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.10, 0.15]
 window_sec = 15
 TRADE_AGG_INTERVAL = 0.1  # seconds (100ms)
 
@@ -254,14 +254,16 @@ def calc_stats(line):
     arr = np.array(line)
     min_val = np.min(arr).item()
     max_val = np.max(arr).item()
-    mean_val = np.mean(arr).item()
-    q25 = np.percentile(arr, 25).item()
+    #mean_val = np.mean(arr).item()
+    #q25 = np.percentile(arr, 25).item()
     q50 = np.percentile(arr, 50).item()
-    q75 = np.percentile(arr, 75).item()
-    return [len(line), line[0], line[-1], mean_val, min_val,  q25, q50, q75, max_val]
+    #q75 = np.percentile(arr, 75).item()
+    #return [len(line), line[0], line[-1], mean_val, min_val,  q25, q50, q75, max_val]
+    return [len(line), line[0], line[-1], min_val, q50, max_val]
 
 def stats_header():
-    return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
+    #return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
+    return ['samples', 'open', 'close', 'min', 'median', 'max']
 
 def get_header():
     header = ['datetime', 'timestamp']
@@ -347,7 +349,7 @@ def stats_calculator(update_queue):
             except KeyboardInterrupt:
                 exit_received = True
             except Exception as e:
-                print(f"stats calculation exception: {e}")
+                print(f"stats calculation exception {type(e).__name__}: {e}")
 
 def my_main_shutdown():
     print("Shutting down all processes...")
