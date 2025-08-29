@@ -22,7 +22,7 @@ trade_buffer = deque()
 order_book = {'bids': {}, 'asks': {}}
 last_orderbook_update_id = None
 tolerance = 0.000001
-liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.10, 0.15]
+liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04]
 window_sec = 15
 TRADE_AGG_INTERVAL = 0.1  # seconds (100ms)
 
@@ -266,7 +266,7 @@ def stats_header():
     return ['samples', 'open', 'close', 'min', 'median', 'max']
 
 def get_header():
-    header = ['datetime', 'timestamp']
+    header = ['datetime', 'timestamp', 'price_diff']
     header += ['buy_samples', 'sell_samples', 'buy_qty', 'sell_qty', 'buy_vwap', 'sell_vwap']
     header += ['bid_'+x for x in stats_header()]
     header += ['ask_' + x for x in stats_header()]
@@ -284,6 +284,7 @@ def get_stats(now, stats):
         return None
 
     line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
+    line += [(stats["best_prices"][0][-1] +stats["best_prices"][1][-1])/2.0 - (stats["best_prices"][0][0] +stats["best_prices"][1][0])/2.0]
 
     buy_qty = sum(stats["trades"][0])
     sell_qty = sum(stats["trades"][1])
