@@ -180,11 +180,11 @@ async def trade_aggregator(update_queue):
             if is_buyer_maker:  # Sell
                 total_sell += qty
                 total_sell_amount += price * qty
-                buy_samples += 1
+                sell_samples += 1
             else:  # Buy
                 total_buy += qty
                 total_buy_amount += price * qty
-                sell_samples += 1
+                buy_samples += 1
         out['buy_qty'] = float(total_buy)
         out['sell_qty'] = float(total_sell)
         out['buy_amount'] = float(total_buy_amount)
