@@ -221,6 +221,67 @@ async def subscribe_trade(update_queue, spot_trade_ws_url, market_type):
 def trade_subscriber(queue, spot_trade_ws_url, market_type):
     asyncio.run(subscribe_trade(queue, spot_trade_ws_url, market_type))
 
+async def subscribe_force_close(future_symbol, buffer):
+    url = f'wss://fstream.binance.com/ws/{future_symbol.lower()}@forceOrder'
+
+    while True:
+        try:
+            async with websockets.connect(url) as ws:
+                print(f"Connected to force exit stream {url}")
+                async for message in ws:
+                    data = json.loads(message)
+
+                    if 'e' not in data or 'o' not in data or data['e'] != 'forceOrder':
+                        print(f"invalid force exit data {data}")
+                        continue
+
+                    o_data = data['o']
+
+                    if 'S' not in o_data or 'q' not in o_data:
+                        print(f"invalid force exit o_data {data}")
+                        continue
+                    long_liq = o_data['S'].lower() == "SELL".lower()
+                    buffer.append(("force_exit", Decimal(o_data['q']), long_liq))
+        except Exception as e:
+            print(f"Force exit WebSocket error {url}: {e}, reconnecting in 2s...")
+            await asyncio.sleep(2)
+
+async def optional_aggregator(update_queue, buffer):
+    while True:
+        await asyncio.sleep(TRADE_AGG_INTERVAL)
+        if not buffer:
+            continue
+
+        out = {'type': 'optional', 'market_type': "optional"}
+        long_liq_qty = Decimal(0)
+        short_liq_qty = Decimal(0)
+        while buffer:
+            update_type, qty, long_liq = buffer.popleft()
+            if update_type == 'force_exit':
+                if long_liq:
+                    long_liq_qty += qty
+                else:
+                    short_liq_qty += qty
+
+        out['long_force_exit_qty_sum'] = float(long_liq_qty)
+        out['short_force_exit_qty_sum'] = float(short_liq_qty)
+        update_queue.put(out)
+
+
+async def subscribe_optional(queue, future_symbol):
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, subscriber_shutdown)
+
+    buffer = deque()
+    await asyncio.gather(subscribe_force_close(future_symbol, buffer), optional_aggregator(queue, buffer))
+
+    while True:
+        await asyncio.sleep(1)
+
+def optional_stats_subscriber(queue, future_symbol):
+    asyncio.run(subscribe_optional(queue, future_symbol))
+
 def init_stats(stats, market_type):
     stats["best_prices"] = [[],[],[]]
     stats['liq_levels'] = []
@@ -375,6 +436,8 @@ def stats_calculator(update_queue):
 
                 update_stats(spot_stats, update)
                 update_stats(future_stats, update)
+                if update['market_type'] == "optional":
+                    print(f"update {update}")
             except KeyboardInterrupt:
                 exit_received = True
             except Exception as e:
@@ -405,19 +468,22 @@ async def my_main():
     p2 = mp.Process(target=trade_subscriber, args=(q, spot_trade_ws_url, "spot"))
     p3 = mp.Process(target=orderbook_subscriber, args=(q, future_snapshot_url, future_prices_ws_url, "future"))
     p4 = mp.Process(target=trade_subscriber, args=(q, future_trade_ws_url, "future"))
-    p5 = mp.Process(target=stats_calculator, args=(q,))
+    p5 = mp.Process(target=optional_stats_subscriber, args=(q, FUTURE_SYMBOL))
+    p6 = mp.Process(target=stats_calculator, args=(q,))
 
     processes.append(p1)
     processes.append(p2)
     processes.append(p3)
     processes.append(p4)
     processes.append(p5)
+    processes.append(p6)
 
     p1.start()
     p2.start()
     p3.start()
     p4.start()
     p5.start()
+    p6.start()
 
     # just idle until stopped
     while True:
