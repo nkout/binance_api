@@ -15,7 +15,6 @@ import time
 SPOT_SYMBOL = "BTCUSDC"
 outfile="out.csv"
 
-trade_buffer = deque()
 order_book = {'bids': {}, 'asks': {}}
 last_orderbook_update_id = None
 tolerance = 0.000001
@@ -135,8 +134,7 @@ async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_ur
 def orderbook_subscriber(queue, spot_snapshot_url, spot_prices_ws_url):
     asyncio.run(subscribe_orderbook(queue, spot_snapshot_url, spot_prices_ws_url))
 
-async def trade_ws(spot_trade_ws_url):
-    global trade_buffer
+async def trade_ws(spot_trade_ws_url, trade_buffer):
     latest_id = 0
     while True:
         try:
@@ -155,8 +153,7 @@ async def trade_ws(spot_trade_ws_url):
             print(f"Trade WebSocket error: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
-async def trade_aggregator(update_queue):
-    global trade_buffer
+async def trade_aggregator(update_queue, trade_buffer):
     while True:
         await asyncio.sleep(TRADE_AGG_INTERVAL)
         if not trade_buffer:
@@ -195,7 +192,8 @@ async def subscribe_trade(update_queue, spot_trade_ws_url):
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
-    await asyncio.gather(trade_ws(spot_trade_ws_url), trade_aggregator(update_queue))
+    trade_buffer = deque()
+    await asyncio.gather(trade_ws(spot_trade_ws_url, trade_buffer), trade_aggregator(update_queue, trade_buffer))
 
     while True:
         await asyncio.sleep(1)
