@@ -13,6 +13,7 @@ from collections import deque
 import time
 
 SPOT_SYMBOL = "BTCUSDC"
+FUTURE_SYMBOL = "BTCUSDT"
 outfile="out.csv"
 
 tolerance = 0.000001
@@ -22,7 +23,7 @@ TRADE_AGG_INTERVAL = 0.1  # seconds (100ms)
 
 processes = []
 
-def aggregate_liquidity(update_queue, liq_steps, order_book):
+def aggregate_liquidity(update_queue, liq_steps, order_book, market_type):
     """Aggregate liquidity at steps above/below best bid/ask."""
     if not order_book['bids'] or not order_book['asks']:
         return
@@ -30,7 +31,7 @@ def aggregate_liquidity(update_queue, liq_steps, order_book):
     best_bid = max(order_book['bids'])
     best_ask = min(order_book['asks'])
 
-    out = {'type': 'prices'}
+    out = {'type': 'prices', 'market_type': market_type}
     out['best_prices'] = [float(best_bid), float(best_ask)]
     out['liq_levels'] = []
 
@@ -56,39 +57,60 @@ async def fetch_snapshot(spot_snapshot_url, order_book):
                     bids = data.get('b') or data.get('bids')
                     asks = data.get('a') or data.get('asks')
                     if bids is None or asks is None:
-                        raise KeyError("'b' or 'a' missing in snapshot data")
+                        raise KeyError(f"'b' or 'a' missing in snapshot data {data}")
                     order_book['bids'] = {Decimal(p): Decimal(q) for p, q in bids}
                     order_book['asks'] = {Decimal(p): Decimal(q) for p, q in asks}
                     order_book['last_update'] = data['lastUpdateId']
-                    print(f"Snapshot loaded: {len(order_book['bids'])} bids, {len(order_book['asks'])} asks")
+                    print(f"Snapshot loaded {spot_snapshot_url} : {len(order_book['bids'])} bids, {len(order_book['asks'])} asks")
                     return
         except Exception as e:
-            print(f"Attempt {attempt} failed: {e}, retrying in {2 ** attempt}s...")
+            print(f"Attempt {attempt} failed on {spot_snapshot_url}: {e}, retrying in {2 ** attempt}s...")
             await asyncio.sleep(2 ** attempt)
             attempt += 1
 
 
-async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book):
+async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book, market_type):
+    first_sync = True
+
     while True:
         try:
             async with websockets.connect(spot_prices_ws_url) as ws:
-                print("Orderbook WebSocket connected")
+                print(f"Orderbook WebSocket connected {spot_prices_ws_url}")
                 async for message in ws:
                     data = json.loads(message)
                     if 'u' not in data or 'U' not in data:
                         continue
 
-                    # Resync if missed updates
-                    if order_book['last_update'] is None or data['U'] > order_book['last_update'] + 1:
-                        print("Missed updates, resyncing snapshot...")
-                        await fetch_snapshot(spot_snapshot_url, order_book)
+                    if market_type == "future" and 'pu' not in data:
                         continue
 
-                    if data['u'] < order_book['last_update'] + 1:
-                        print("ignore past update")
+                    # Resync if missed updates
+                    if order_book['last_update'] is None:
+                        await fetch_snapshot(spot_snapshot_url, order_book)
+                        first_sync = True
                         continue
+
+                    if market_type == "spot" or first_sync:
+                        if data['U'] > order_book['last_update'] + 1:
+                            print(f"Missed updates, resyncing snapshot {spot_snapshot_url}...")
+                            order_book['last_update'] = None
+                            await fetch_snapshot(spot_snapshot_url, order_book)
+                            first_sync = True
+                            continue
+
+                        if data['u'] < order_book['last_update'] + 1:
+                            print(f"ignore past update of {spot_prices_ws_url}")
+                            continue
+                    else:
+                        if data['pu'] != order_book['last_update']:
+                            print(f"Missed future updates, resyncing snapshot {spot_snapshot_url}...")
+                            order_book['last_update'] = None
+                            await fetch_snapshot(spot_snapshot_url, order_book)
+                            first_sync = True
+                            continue
 
                     order_book['last_update'] = data['u']
+                    first_sync = False
 
                     # Update bids
                     for price_str, qty_str in data.get('b', []):
@@ -108,15 +130,15 @@ async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_ur
                         else:
                             order_book['asks'][price] = qty
 
-                    aggregate_liquidity(update_queue, liq_steps, order_book)
+                    aggregate_liquidity(update_queue, liq_steps, order_book, market_type)
         except Exception as e:
-            print(f"WebSocket disconnected, retrying... {e}")
+            print(f"WebSocket disconnected {spot_prices_ws_url}, retrying... {e}")
             await asyncio.sleep(2)
 
 def subscriber_shutdown():
     sys.exit(0)
 
-async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_url):
+async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_url, market_type):
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, subscriber_shutdown)
@@ -124,20 +146,20 @@ async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_ur
     order_book = {'bids': {}, 'asks': {}, 'last_update': None}
 
     await fetch_snapshot(spot_snapshot_url, order_book)
-    await handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book)
+    await handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book, market_type)
 
     while True:
         await asyncio.sleep(1)
 
-def orderbook_subscriber(queue, spot_snapshot_url, spot_prices_ws_url):
-    asyncio.run(subscribe_orderbook(queue, spot_snapshot_url, spot_prices_ws_url))
+def orderbook_subscriber(queue, spot_snapshot_url, spot_prices_ws_url, market_type):
+    asyncio.run(subscribe_orderbook(queue, spot_snapshot_url, spot_prices_ws_url, market_type))
 
 async def trade_ws(spot_trade_ws_url, trade_buffer):
     latest_id = 0
     while True:
         try:
             async with websockets.connect(spot_trade_ws_url) as ws:
-                print("Connected to trade stream")
+                print(f"Connected to trade stream {spot_trade_ws_url}")
                 async for message in ws:
                     data = json.loads(message)
                     price = Decimal(data['p'])
@@ -148,10 +170,10 @@ async def trade_ws(spot_trade_ws_url, trade_buffer):
                     latest_id  = data['t']
                     trade_buffer.append((price, qty, is_buyer_maker))
         except Exception as e:
-            print(f"Trade WebSocket error: {e}, reconnecting in 2s...")
+            print(f"Trade WebSocket error {spot_trade_ws_url}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
-async def trade_aggregator(update_queue, trade_buffer):
+async def trade_aggregator(update_queue, trade_buffer, market_type):
     while True:
         await asyncio.sleep(TRADE_AGG_INTERVAL)
         if not trade_buffer:
@@ -163,7 +185,7 @@ async def trade_aggregator(update_queue, trade_buffer):
         total_sell_amount = Decimal(0)
         total_volume = Decimal(0)
 
-        out = {'type': 'trade'}
+        out = {'type': 'trade', 'market_type': market_type}
         buy_samples = 0
         sell_samples = 0
         while trade_buffer:
@@ -185,28 +207,32 @@ async def trade_aggregator(update_queue, trade_buffer):
         out['sell_samples'] = sell_samples
         update_queue.put(out)
 
-async def subscribe_trade(update_queue, spot_trade_ws_url):
+async def subscribe_trade(update_queue, spot_trade_ws_url, market_type):
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
     trade_buffer = deque()
-    await asyncio.gather(trade_ws(spot_trade_ws_url, trade_buffer), trade_aggregator(update_queue, trade_buffer))
+    await asyncio.gather(trade_ws(spot_trade_ws_url, trade_buffer), trade_aggregator(update_queue, trade_buffer, market_type))
 
     while True:
         await asyncio.sleep(1)
 
-def trade_subscriber(queue, spot_trade_ws_url):
-    asyncio.run(subscribe_trade(queue, spot_trade_ws_url))
+def trade_subscriber(queue, spot_trade_ws_url, market_type):
+    asyncio.run(subscribe_trade(queue, spot_trade_ws_url, market_type))
 
-def init_stats(stats):
+def init_stats(stats, market_type):
     stats["spot_best_prices"] = [[],[],[]]
     stats['spot_liq_levels'] = []
+    stats['market_type'] = market_type
     for p in liq_steps:
         stats['spot_liq_levels'].append([[],[],[]])
     stats['spot_trades'] = [[],[],[],[],[],[]]
 
 def update_stats(stats, update):
+    if update['market_type'] != stats['market_type']:
+        return
+
     if update['type'] == 'prices':
         stats["spot_best_prices"][0].append(update['best_prices'][0])
         stats["spot_best_prices"][1].append(update['best_prices'][1])
@@ -313,8 +339,10 @@ def stats_calculator(update_queue):
     signal.signal(signal.SIGINT, stats_calculator_shutdown)
     signal.signal(signal.SIGTERM, stats_calculator_shutdown)
 
-    stats = {}
-    init_stats(stats)
+    spot_stats = {}
+    future_stats = {}
+    init_stats(spot_stats, "spot")
+    init_stats(future_stats, "future")
     header_printed = False
     exit_received = False
 
@@ -332,14 +360,16 @@ def stats_calculator(update_queue):
                         print(get_header())
                         writer.writerow(get_header())
                         header_printed = True
-                    line = get_stats(last_print, stats)
+                    line = get_stats(last_print, future_stats)
                     if line:
                         print(line)
                         writer.writerow(line)
-                    reset_stats(stats)
+                    reset_stats(spot_stats)
+                    reset_stats(future_stats)
                     last_print = round_to_interval(now, window_sec)
 
-                update_stats(stats, update)
+                update_stats(spot_stats, update)
+                update_stats(future_stats, update)
             except KeyboardInterrupt:
                 exit_received = True
             except Exception as e:
@@ -361,18 +391,28 @@ async def my_main():
     spot_prices_ws_url = f"wss://stream.binance.com:9443/ws/{SPOT_SYMBOL.lower()}@depth@100ms"
     spot_trade_ws_url = f"wss://stream.binance.com:9443/ws/{SPOT_SYMBOL.lower()}@trade"
 
+    future_snapshot_url =  f"https://fapi.binance.com/fapi/v1/depth?symbol={FUTURE_SYMBOL.upper()}&limit=1000"
+    future_prices_ws_url = f"wss://fstream.binance.com/ws/{FUTURE_SYMBOL.lower()}@depth@100ms"
+    future_trade_ws_url =  f"wss://fstream.binance.com/ws/{FUTURE_SYMBOL.lower()}@trade"
+
     q = mp.Queue()
-    p1 = mp.Process(target=orderbook_subscriber, args=(q,spot_snapshot_url, spot_prices_ws_url))
-    p2 = mp.Process(target=trade_subscriber, args=(q, spot_trade_ws_url))
-    p3 = mp.Process(target=stats_calculator, args=(q,))
+    p1 = mp.Process(target=orderbook_subscriber, args=(q,spot_snapshot_url, spot_prices_ws_url, "spot"))
+    p2 = mp.Process(target=trade_subscriber, args=(q, spot_trade_ws_url, "spot"))
+    p3 = mp.Process(target=orderbook_subscriber, args=(q, future_snapshot_url, future_prices_ws_url, "future"))
+    p4 = mp.Process(target=trade_subscriber, args=(q, future_trade_ws_url, "future"))
+    p5 = mp.Process(target=stats_calculator, args=(q,))
 
     processes.append(p1)
     processes.append(p2)
     processes.append(p3)
+    processes.append(p4)
+    processes.append(p5)
 
     p1.start()
     p2.start()
     p3.start()
+    p4.start()
+    p5.start()
 
     # just idle until stopped
     while True:
