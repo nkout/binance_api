@@ -15,8 +15,6 @@ import time
 SPOT_SYMBOL = "BTCUSDC"
 outfile="out.csv"
 
-order_book = {'bids': {}, 'asks': {}}
-last_orderbook_update_id = None
 tolerance = 0.000001
 liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04]
 window_sec = 15
@@ -24,7 +22,7 @@ TRADE_AGG_INTERVAL = 0.1  # seconds (100ms)
 
 processes = []
 
-def aggregate_liquidity(update_queue, liq_steps):
+def aggregate_liquidity(update_queue, liq_steps, order_book):
     """Aggregate liquidity at steps above/below best bid/ask."""
     if not order_book['bids'] or not order_book['asks']:
         return
@@ -46,9 +44,8 @@ def aggregate_liquidity(update_queue, liq_steps):
     update_queue.put(out)
     #print(out)
 
-async def fetch_snapshot(spot_snapshot_url):
+async def fetch_snapshot(spot_snapshot_url, order_book):
     """Fetch snapshot and normalize keys to 'b' and 'a'."""
-    global order_book, last_orderbook_update_id
     attempt = 1
     while True:
         try:
@@ -62,7 +59,7 @@ async def fetch_snapshot(spot_snapshot_url):
                         raise KeyError("'b' or 'a' missing in snapshot data")
                     order_book['bids'] = {Decimal(p): Decimal(q) for p, q in bids}
                     order_book['asks'] = {Decimal(p): Decimal(q) for p, q in asks}
-                    last_orderbook_update_id = data['lastUpdateId']
+                    order_book['last_update'] = data['lastUpdateId']
                     print(f"Snapshot loaded: {len(order_book['bids'])} bids, {len(order_book['asks'])} asks")
                     return
         except Exception as e:
@@ -71,8 +68,7 @@ async def fetch_snapshot(spot_snapshot_url):
             attempt += 1
 
 
-async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url):
-    global order_book, last_orderbook_update_id
+async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book):
     while True:
         try:
             async with websockets.connect(spot_prices_ws_url) as ws:
@@ -83,16 +79,16 @@ async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_ur
                         continue
 
                     # Resync if missed updates
-                    if last_orderbook_update_id is None or data['U'] > last_orderbook_update_id + 1:
+                    if order_book['last_update'] is None or data['U'] > order_book['last_update'] + 1:
                         print("Missed updates, resyncing snapshot...")
-                        await fetch_snapshot(spot_snapshot_url)
+                        await fetch_snapshot(spot_snapshot_url, order_book)
                         continue
 
-                    if data['u'] < last_orderbook_update_id + 1:
+                    if data['u'] < order_book['last_update'] + 1:
                         print("ignore past update")
                         continue
 
-                    last_orderbook_update_id = data['u']
+                    order_book['last_update'] = data['u']
 
                     # Update bids
                     for price_str, qty_str in data.get('b', []):
@@ -112,7 +108,7 @@ async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_ur
                         else:
                             order_book['asks'][price] = qty
 
-                    aggregate_liquidity(update_queue, liq_steps)
+                    aggregate_liquidity(update_queue, liq_steps, order_book)
         except Exception as e:
             print(f"WebSocket disconnected, retrying... {e}")
             await asyncio.sleep(2)
@@ -125,8 +121,10 @@ async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_ur
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
-    await fetch_snapshot(spot_snapshot_url)
-    await handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url)
+    order_book = {'bids': {}, 'asks': {}, 'last_update': None}
+
+    await fetch_snapshot(spot_snapshot_url, order_book)
+    await handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book)
 
     while True:
         await asyncio.sleep(1)
