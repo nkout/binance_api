@@ -222,52 +222,52 @@ def trade_subscriber(queue, spot_trade_ws_url, market_type):
     asyncio.run(subscribe_trade(queue, spot_trade_ws_url, market_type))
 
 def init_stats(stats, market_type):
-    stats["spot_best_prices"] = [[],[],[]]
-    stats['spot_liq_levels'] = []
+    stats["best_prices"] = [[],[],[]]
+    stats['liq_levels'] = []
     stats['market_type'] = market_type
     for p in liq_steps:
-        stats['spot_liq_levels'].append([[],[],[]])
-    stats['spot_trades'] = [[],[],[],[],[],[]]
+        stats['liq_levels'].append([[],[],[]])
+    stats['trades'] = [[],[],[],[],[],[]]
 
 def update_stats(stats, update):
     if update['market_type'] != stats['market_type']:
         return
 
     if update['type'] == 'prices':
-        stats["spot_best_prices"][0].append(update['best_prices'][0])
-        stats["spot_best_prices"][1].append(update['best_prices'][1])
-        stats["spot_best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
+        stats["best_prices"][0].append(update['best_prices'][0])
+        stats["best_prices"][1].append(update['best_prices'][1])
+        stats["best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
 
         for c, p in enumerate(liq_steps):
-            stats['spot_liq_levels'][c][0].append(update['liq_levels'][c][0])
-            stats['spot_liq_levels'][c][1].append(update['liq_levels'][c][1])
-            stats['spot_liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
+            stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
+            stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
+            stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
     elif update['type'] == 'trade':
-        stats["spot_trades"][0].append(update['buy_qty'])
-        stats["spot_trades"][1].append(update['sell_qty'])
-        stats["spot_trades"][2].append(update['buy_amount'])
-        stats["spot_trades"][3].append(update['sell_amount'])
-        stats["spot_trades"][4].append(update['buy_samples'])
-        stats["spot_trades"][5].append(update['sell_samples'])
+        stats["trades"][0].append(update['buy_qty'])
+        stats["trades"][1].append(update['sell_qty'])
+        stats["trades"][2].append(update['buy_amount'])
+        stats["trades"][3].append(update['sell_amount'])
+        stats["trades"][4].append(update['buy_samples'])
+        stats["trades"][5].append(update['sell_samples'])
     else:
         print('wrong update type')
 
 def reset_stats(stats):
-    stats["spot_best_prices"][0].clear()
-    stats["spot_best_prices"][1].clear()
-    stats["spot_best_prices"][2].clear()
+    stats["best_prices"][0].clear()
+    stats["best_prices"][1].clear()
+    stats["best_prices"][2].clear()
 
     for c, p in enumerate(liq_steps):
-        stats['spot_liq_levels'][c][0].clear()
-        stats['spot_liq_levels'][c][1].clear()
-        stats['spot_liq_levels'][c][2].clear()
+        stats['liq_levels'][c][0].clear()
+        stats['liq_levels'][c][1].clear()
+        stats['liq_levels'][c][2].clear()
 
-    stats["spot_trades"][0].clear()
-    stats["spot_trades"][1].clear()
-    stats["spot_trades"][2].clear()
-    stats["spot_trades"][3].clear()
-    stats["spot_trades"][4].clear()
-    stats["spot_trades"][5].clear()
+    stats["trades"][0].clear()
+    stats["trades"][1].clear()
+    stats["trades"][2].clear()
+    stats["trades"][3].clear()
+    stats["trades"][4].clear()
+    stats["trades"][5].clear()
 
 def calc_stats(line):
     arr = np.array(line)
@@ -285,40 +285,40 @@ def stats_header():
     return ['samples', 'open', 'close', 'min', 'median', 'max']
 
 def get_header():
-    header = ['datetime', 'timestamp', 'spot_price_diff']
-    header += ['spot_buy_samples', 'spot_sell_samples', 'spot_buy_qty', 'spot_sell_qty', 'spot_buy_vwap', 'spot_sell_vwap']
-    header += ['spot_bid_'+x for x in stats_header()]
-    header += ['spot_ask_' + x for x in stats_header()]
-    header += ['spot_spread_' + x for x in stats_header()]
+    header = ['datetime', 'timestamp', 'price_diff']
+    header += ['buy_samples', 'sell_samples', 'buy_qty', 'sell_qty', 'buy_vwap', 'sell_vwap']
+    header += ['bid_'+x for x in stats_header()]
+    header += ['ask_' + x for x in stats_header()]
+    header += ['spread_' + x for x in stats_header()]
 
     for c, p in enumerate(liq_steps):
-        header += [f'spot_bid_liq_{p:.4}_' + x for x in stats_header()]
-        header += [f'spot_ask_liq_{p:.4}_' + x for x in stats_header()]
-        header += [f'spot_diff_liq_{p:.4}_'  + x for x in stats_header()]
+        header += [f'bid_liq_{p:.4}_' + x for x in stats_header()]
+        header += [f'ask_liq_{p:.4}_' + x for x in stats_header()]
+        header += [f'diff_liq_{p:.4}_'  + x for x in stats_header()]
 
     return header
 
 def get_stats(now, stats):
-    if len(stats["spot_best_prices"][0]) == 0 or len(stats["spot_trades"][0]) == 0:
+    if len(stats["best_prices"][0]) == 0 or len(stats["trades"][0]) == 0:
         return None
 
     line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
-    line += [(stats["spot_best_prices"][0][-1] +stats["spot_best_prices"][1][-1])/2.0 - (stats["spot_best_prices"][0][0] +stats["spot_best_prices"][1][0])/2.0]
+    line += [(stats["best_prices"][0][-1] +stats["best_prices"][1][-1])/2.0 - (stats["best_prices"][0][0] +stats["best_prices"][1][0])/2.0]
 
-    buy_qty = sum(stats["spot_trades"][0])
-    sell_qty = sum(stats["spot_trades"][1])
-    buy_vwap = sum(stats["spot_trades"][2]) / buy_qty if buy_qty > tolerance else 0.0
-    sell_vwap = sum(stats["spot_trades"][3]) / sell_qty if sell_qty > tolerance else 0.0
-    line += [sum(stats["spot_trades"][4]), sum(stats["spot_trades"][5]), buy_qty, sell_qty, buy_vwap, sell_vwap]
+    buy_qty = sum(stats["trades"][0])
+    sell_qty = sum(stats["trades"][1])
+    buy_vwap = sum(stats["trades"][2]) / buy_qty if buy_qty > tolerance else 0.0
+    sell_vwap = sum(stats["trades"][3]) / sell_qty if sell_qty > tolerance else 0.0
+    line += [sum(stats["trades"][4]), sum(stats["trades"][5]), buy_qty, sell_qty, buy_vwap, sell_vwap]
 
-    line += calc_stats(stats["spot_best_prices"][0])
-    line += calc_stats(stats["spot_best_prices"][1])
-    line += calc_stats(stats["spot_best_prices"][2])
+    line += calc_stats(stats["best_prices"][0])
+    line += calc_stats(stats["best_prices"][1])
+    line += calc_stats(stats["best_prices"][2])
 
     for c, p in enumerate(liq_steps):
-        line += calc_stats(stats['spot_liq_levels'][c][0])
-        line += calc_stats(stats['spot_liq_levels'][c][1])
-        line += calc_stats(stats['spot_liq_levels'][c][2])
+        line += calc_stats(stats['liq_levels'][c][0])
+        line += calc_stats(stats['liq_levels'][c][1])
+        line += calc_stats(stats['liq_levels'][c][2])
 
     return line
 
@@ -357,11 +357,16 @@ def stats_calculator(update_queue):
 
                 if (now - last_print).total_seconds() > window_sec + tolerance:
                     if not header_printed:
-                        print(get_header())
-                        writer.writerow(get_header())
+                        spot_header = ["spot_" + x for x in get_header()]
+                        future_header = ["future_" + x for x in get_header()]
+                        full_header = [val for pair in zip(spot_header, future_header) for val in pair]
+                        print(full_header)
+                        writer.writerow(full_header)
                         header_printed = True
-                    line = get_stats(last_print, future_stats)
-                    if line:
+                    spot_line = get_stats(last_print, spot_stats)
+                    future_line = get_stats(last_print, future_stats)
+                    if spot_line and future_line:
+                        line = [val for pair in zip(spot_line, future_line) for val in pair]
                         print(line)
                         writer.writerow(line)
                     reset_stats(spot_stats)
