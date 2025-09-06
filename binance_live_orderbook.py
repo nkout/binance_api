@@ -12,11 +12,8 @@ import sys
 from collections import deque
 import time
 
-SYMBOL = "BTCUSDC"
-SNAPSHOT_URL = f"https://api.binance.com/api/v3/depth?symbol={SYMBOL}&limit=5000"
-PRICES_WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@depth@100ms"
-TRADE_WS_URL = f"wss://stream.binance.com:9443/ws/{SYMBOL.lower()}@trade"
-outfile="out.txt"
+SPOT_SYMBOL = "BTCUSDC"
+outfile="out.csv"
 
 trade_buffer = deque()
 order_book = {'bids': {}, 'asks': {}}
@@ -50,14 +47,14 @@ def aggregate_liquidity(update_queue, liq_steps):
     update_queue.put(out)
     #print(out)
 
-async def fetch_snapshot():
+async def fetch_snapshot(spot_snapshot_url):
     """Fetch snapshot and normalize keys to 'b' and 'a'."""
     global order_book, last_orderbook_update_id
     attempt = 1
     while True:
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(SNAPSHOT_URL) as resp:
+                async with session.get(spot_snapshot_url) as resp:
                     data = await resp.json()
                     # Normalize keys
                     bids = data.get('b') or data.get('bids')
@@ -75,11 +72,11 @@ async def fetch_snapshot():
             attempt += 1
 
 
-async def handle_orderbook_ws(update_queue):
+async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url):
     global order_book, last_orderbook_update_id
     while True:
         try:
-            async with websockets.connect(PRICES_WS_URL) as ws:
+            async with websockets.connect(spot_prices_ws_url) as ws:
                 print("Orderbook WebSocket connected")
                 async for message in ws:
                     data = json.loads(message)
@@ -89,7 +86,7 @@ async def handle_orderbook_ws(update_queue):
                     # Resync if missed updates
                     if last_orderbook_update_id is None or data['U'] > last_orderbook_update_id + 1:
                         print("Missed updates, resyncing snapshot...")
-                        await fetch_snapshot()
+                        await fetch_snapshot(spot_snapshot_url)
                         continue
 
                     if data['u'] < last_orderbook_update_id + 1:
@@ -124,26 +121,26 @@ async def handle_orderbook_ws(update_queue):
 def subscriber_shutdown():
     sys.exit(0)
 
-async def subscribe_orderbook(update_queue):
+async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_url):
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
-    await fetch_snapshot()
-    await handle_orderbook_ws(update_queue)
+    await fetch_snapshot(spot_snapshot_url)
+    await handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url)
 
     while True:
         await asyncio.sleep(1)
 
-def orderbook_subscriber(queue):
-    asyncio.run(subscribe_orderbook(queue))
+def orderbook_subscriber(queue, spot_snapshot_url, spot_prices_ws_url):
+    asyncio.run(subscribe_orderbook(queue, spot_snapshot_url, spot_prices_ws_url))
 
-async def trade_ws():
+async def trade_ws(spot_trade_ws_url):
     global trade_buffer
     latest_id = 0
     while True:
         try:
-            async with websockets.connect(TRADE_WS_URL) as ws:
+            async with websockets.connect(spot_trade_ws_url) as ws:
                 print("Connected to trade stream")
                 async for message in ws:
                     data = json.loads(message)
@@ -193,62 +190,62 @@ async def trade_aggregator(update_queue):
         out['sell_samples'] = sell_samples
         update_queue.put(out)
 
-async def subscribe_trade(update_queue):
+async def subscribe_trade(update_queue, spot_trade_ws_url):
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
-    await asyncio.gather(trade_ws(), trade_aggregator(update_queue))
+    await asyncio.gather(trade_ws(spot_trade_ws_url), trade_aggregator(update_queue))
 
     while True:
         await asyncio.sleep(1)
 
-def trade_subscriber(queue):
-    asyncio.run(subscribe_trade(queue))
+def trade_subscriber(queue, spot_trade_ws_url):
+    asyncio.run(subscribe_trade(queue, spot_trade_ws_url))
 
 def init_stats(stats):
-    stats["best_prices"] = [[],[],[]]
-    stats['liq_levels'] = []
+    stats["spot_best_prices"] = [[],[],[]]
+    stats['spot_liq_levels'] = []
     for p in liq_steps:
-        stats['liq_levels'].append([[],[],[]])
-    stats['trades'] = [[],[],[],[],[],[]]
+        stats['spot_liq_levels'].append([[],[],[]])
+    stats['spot_trades'] = [[],[],[],[],[],[]]
 
 def update_stats(stats, update):
     if update['type'] == 'prices':
-        stats["best_prices"][0].append(update['best_prices'][0])
-        stats["best_prices"][1].append(update['best_prices'][1])
-        stats["best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
+        stats["spot_best_prices"][0].append(update['best_prices'][0])
+        stats["spot_best_prices"][1].append(update['best_prices'][1])
+        stats["spot_best_prices"][2].append(update['best_prices'][1] - update['best_prices'][0])
 
         for c, p in enumerate(liq_steps):
-            stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
-            stats['liq_levels'][c][1].append(update['liq_levels'][c][1])
-            stats['liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
+            stats['spot_liq_levels'][c][0].append(update['liq_levels'][c][0])
+            stats['spot_liq_levels'][c][1].append(update['liq_levels'][c][1])
+            stats['spot_liq_levels'][c][2].append(update['liq_levels'][c][1] - update['liq_levels'][c][0])
     elif update['type'] == 'trade':
-        stats["trades"][0].append(update['buy_qty'])
-        stats["trades"][1].append(update['sell_qty'])
-        stats["trades"][2].append(update['buy_amount'])
-        stats["trades"][3].append(update['sell_amount'])
-        stats["trades"][4].append(update['buy_samples'])
-        stats["trades"][5].append(update['sell_samples'])
+        stats["spot_trades"][0].append(update['buy_qty'])
+        stats["spot_trades"][1].append(update['sell_qty'])
+        stats["spot_trades"][2].append(update['buy_amount'])
+        stats["spot_trades"][3].append(update['sell_amount'])
+        stats["spot_trades"][4].append(update['buy_samples'])
+        stats["spot_trades"][5].append(update['sell_samples'])
     else:
         print('wrong update type')
 
 def reset_stats(stats):
-    stats["best_prices"][0].clear()
-    stats["best_prices"][1].clear()
-    stats["best_prices"][2].clear()
+    stats["spot_best_prices"][0].clear()
+    stats["spot_best_prices"][1].clear()
+    stats["spot_best_prices"][2].clear()
 
     for c, p in enumerate(liq_steps):
-        stats['liq_levels'][c][0].clear()
-        stats['liq_levels'][c][1].clear()
-        stats['liq_levels'][c][2].clear()
+        stats['spot_liq_levels'][c][0].clear()
+        stats['spot_liq_levels'][c][1].clear()
+        stats['spot_liq_levels'][c][2].clear()
 
-    stats["trades"][0].clear()
-    stats["trades"][1].clear()
-    stats["trades"][2].clear()
-    stats["trades"][3].clear()
-    stats["trades"][4].clear()
-    stats["trades"][5].clear()
+    stats["spot_trades"][0].clear()
+    stats["spot_trades"][1].clear()
+    stats["spot_trades"][2].clear()
+    stats["spot_trades"][3].clear()
+    stats["spot_trades"][4].clear()
+    stats["spot_trades"][5].clear()
 
 def calc_stats(line):
     arr = np.array(line)
@@ -266,40 +263,40 @@ def stats_header():
     return ['samples', 'open', 'close', 'min', 'median', 'max']
 
 def get_header():
-    header = ['datetime', 'timestamp', 'price_diff']
-    header += ['buy_samples', 'sell_samples', 'buy_qty', 'sell_qty', 'buy_vwap', 'sell_vwap']
-    header += ['bid_'+x for x in stats_header()]
-    header += ['ask_' + x for x in stats_header()]
-    header += ['spread_' + x for x in stats_header()]
+    header = ['datetime', 'timestamp', 'spot_price_diff']
+    header += ['spot_buy_samples', 'spot_sell_samples', 'spot_buy_qty', 'spot_sell_qty', 'spot_buy_vwap', 'spot_sell_vwap']
+    header += ['spot_bid_'+x for x in stats_header()]
+    header += ['spot_ask_' + x for x in stats_header()]
+    header += ['spot_spread_' + x for x in stats_header()]
 
     for c, p in enumerate(liq_steps):
-        header += [f'bid_liq_{p:.4}_' + x for x in stats_header()]
-        header += [f'ask_liq_{p:.4}_' + x for x in stats_header()]
-        header += [f'diff_liq_{p:.4}_'  + x for x in stats_header()]
+        header += [f'spot_bid_liq_{p:.4}_' + x for x in stats_header()]
+        header += [f'spot_ask_liq_{p:.4}_' + x for x in stats_header()]
+        header += [f'spot_diff_liq_{p:.4}_'  + x for x in stats_header()]
 
     return header
 
 def get_stats(now, stats):
-    if len(stats["best_prices"][0]) == 0 or len(stats["trades"][0]) == 0:
+    if len(stats["spot_best_prices"][0]) == 0 or len(stats["spot_trades"][0]) == 0:
         return None
 
     line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
-    line += [(stats["best_prices"][0][-1] +stats["best_prices"][1][-1])/2.0 - (stats["best_prices"][0][0] +stats["best_prices"][1][0])/2.0]
+    line += [(stats["spot_best_prices"][0][-1] +stats["spot_best_prices"][1][-1])/2.0 - (stats["spot_best_prices"][0][0] +stats["spot_best_prices"][1][0])/2.0]
 
-    buy_qty = sum(stats["trades"][0])
-    sell_qty = sum(stats["trades"][1])
-    buy_vwap = sum(stats["trades"][2]) / buy_qty if buy_qty > tolerance else 0.0
-    sell_vwap = sum(stats["trades"][3]) / sell_qty if sell_qty > tolerance else 0.0
-    line += [sum(stats["trades"][4]), sum(stats["trades"][5]), buy_qty, sell_qty, buy_vwap, sell_vwap]
+    buy_qty = sum(stats["spot_trades"][0])
+    sell_qty = sum(stats["spot_trades"][1])
+    buy_vwap = sum(stats["spot_trades"][2]) / buy_qty if buy_qty > tolerance else 0.0
+    sell_vwap = sum(stats["spot_trades"][3]) / sell_qty if sell_qty > tolerance else 0.0
+    line += [sum(stats["spot_trades"][4]), sum(stats["spot_trades"][5]), buy_qty, sell_qty, buy_vwap, sell_vwap]
 
-    line += calc_stats(stats["best_prices"][0])
-    line += calc_stats(stats["best_prices"][1])
-    line += calc_stats(stats["best_prices"][2])
+    line += calc_stats(stats["spot_best_prices"][0])
+    line += calc_stats(stats["spot_best_prices"][1])
+    line += calc_stats(stats["spot_best_prices"][2])
 
     for c, p in enumerate(liq_steps):
-        line += calc_stats(stats['liq_levels'][c][0])
-        line += calc_stats(stats['liq_levels'][c][1])
-        line += calc_stats(stats['liq_levels'][c][2])
+        line += calc_stats(stats['spot_liq_levels'][c][0])
+        line += calc_stats(stats['spot_liq_levels'][c][1])
+        line += calc_stats(stats['spot_liq_levels'][c][2])
 
     return line
 
@@ -364,9 +361,13 @@ async def my_main():
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, my_main_shutdown)
 
+    spot_snapshot_url = f"https://api.binance.com/api/v3/depth?symbol={SPOT_SYMBOL.upper()}&limit=5000"
+    spot_prices_ws_url = f"wss://stream.binance.com:9443/ws/{SPOT_SYMBOL.lower()}@depth@100ms"
+    spot_trade_ws_url = f"wss://stream.binance.com:9443/ws/{SPOT_SYMBOL.lower()}@trade"
+
     q = mp.Queue()
-    p1 = mp.Process(target=orderbook_subscriber, args=(q,))
-    p2 = mp.Process(target=trade_subscriber, args=(q,))
+    p1 = mp.Process(target=orderbook_subscriber, args=(q,spot_snapshot_url, spot_prices_ws_url))
+    p2 = mp.Process(target=trade_subscriber, args=(q, spot_trade_ws_url))
     p3 = mp.Process(target=stats_calculator, args=(q,))
 
     processes.append(p1)
