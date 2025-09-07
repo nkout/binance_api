@@ -232,7 +232,7 @@ async def fetch_long_short_ratio(symbol):
 
                 if data:
                     ratio = float(data[0]["longShortRatio"])
-                    timestamp = int(data[0]["timestamp"])
+                    #timestamp = int(data[0]["timestamp"])
                     return ratio
         except Exception as e:
             print(f"Attempt {attempt} failed on {url}: {e}, retrying in {2 ** attempt}s...")
@@ -251,6 +251,38 @@ async def poll_ratio(future_symbol, buffer):
             if ratio is not None:
                 last_poll = round_to_interval(datetime.datetime.now(), window_sec)
                 buffer.append(("long_short_ratio", ratio))
+
+
+async def fetch_open_interest(symbol):
+    url = f'https://fapi.binance.com/fapi/v1/openInterest?symbol={symbol.upper()}'
+    attempt = 1
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+
+                if data:
+                    open_interest = float(data["openInterest"])
+                    #timestamp = int(data[0]["timestamp"])
+                    return open_interest
+        except Exception as e:
+            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {2 ** attempt}s...")
+            await asyncio.sleep(2 ** attempt)
+            attempt += 1
+
+async def poll_open_interest(future_symbol, buffer):
+    last_poll = round_to_interval(datetime.datetime.now(), window_sec)
+    while True:
+        await asyncio.sleep(thread_interval)
+        now = datetime.datetime.now()
+        rounded_now = round_to_interval(now, window_sec)
+
+        if (now - last_poll).total_seconds() > (window_sec + tolerance) and (now - rounded_now).total_seconds() > (window_sec / 2.0 + tolerance):
+            open_interest = await fetch_open_interest(future_symbol)
+            if open_interest is not None:
+                last_poll = round_to_interval(datetime.datetime.now(), window_sec)
+                buffer.append(("open_interest", open_interest))
 
 async def subscribe_force_close(future_symbol, buffer):
     url = f'wss://fstream.binance.com/ws/{future_symbol.lower()}@forceOrder'
@@ -300,6 +332,10 @@ async def optional_aggregator(update_queue, buffer):
             elif update_type == 'long_short_ratio':
                 ratio, = update_data
                 out['long_short_ratio_sample'] = ratio
+            elif update_type == 'open_interest':
+                open_interest, = update_data
+                out['open_interest_sample'] = open_interest
+
 
         out['long_force_exit_qty_sum'] = float(long_liq_qty)
         out['short_force_exit_qty_sum'] = float(short_liq_qty)
@@ -312,7 +348,10 @@ async def subscribe_optional(queue, future_symbol):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
     buffer = deque()
-    await asyncio.gather(subscribe_force_close(future_symbol, buffer), optional_aggregator(queue, buffer), poll_ratio(future_symbol, buffer))
+    await asyncio.gather(subscribe_force_close(future_symbol, buffer),
+                         poll_ratio(future_symbol, buffer),
+                         poll_open_interest(future_symbol, buffer),
+                         optional_aggregator(queue, buffer))
 
     while True:
         await asyncio.sleep(1)

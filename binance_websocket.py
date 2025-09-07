@@ -16,7 +16,9 @@ symbol = "btcusdt"
 #url =  f"wss://fstream.binance.com/ws/{symbol.lower()}@openInterest"
 #url = 'wss://fstream.binance.com/ws/btcusdt@forceOrder'
 url = f"wss://fstream.binance.com/ws/{symbol.lower()}@depth@100ms"
-url = 'wss://fstream.binance.com/ws/btcusdt@forceOrder'
+#url = 'wss://fstream.binance.com/ws/btcusdt@forceOrder'
+url = f'wss://fstream.binance.com/ws/{symbol.lower()}@openInterest'
+url = f'wss://fstream.binance.com/ws/{symbol.lower()}@markPrice'
 
 ws = websocket.WebSocketApp(url, on_message=on_message, on_open=on_open, on_close=on_close)
 ws.run_forever()
