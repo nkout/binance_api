@@ -19,7 +19,7 @@ outfile="out.csv"
 tolerance = 0.000001
 liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04]
 window_sec = 15
-TRADE_AGG_INTERVAL = 0.1  # seconds (100ms)
+thread_interval = 0.2  # seconds (200ms)
 
 processes = []
 
@@ -175,7 +175,7 @@ async def trade_ws(spot_trade_ws_url, trade_buffer):
 
 async def trade_aggregator(update_queue, trade_buffer, market_type):
     while True:
-        await asyncio.sleep(TRADE_AGG_INTERVAL)
+        await asyncio.sleep(thread_interval)
         if not trade_buffer:
             continue
 
@@ -221,6 +221,37 @@ async def subscribe_trade(update_queue, spot_trade_ws_url, market_type):
 def trade_subscriber(queue, spot_trade_ws_url, market_type):
     asyncio.run(subscribe_trade(queue, spot_trade_ws_url, market_type))
 
+async def fetch_long_short_ratio(symbol):
+    url = f"https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol={symbol.upper()}&period=5m&limit=1"
+    attempt = 1
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    data = await resp.json()
+
+                if data:
+                    ratio = float(data[0]["longShortRatio"])
+                    timestamp = int(data[0]["timestamp"])
+                    return ratio
+        except Exception as e:
+            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {2 ** attempt}s...")
+            await asyncio.sleep(2 ** attempt)
+            attempt += 1
+
+async def poll_ratio(future_symbol, buffer):
+    last_poll = round_to_interval(datetime.datetime.now(), window_sec)
+    while True:
+        await asyncio.sleep(thread_interval)
+        now = datetime.datetime.now()
+        rounded_now = round_to_interval(now, window_sec)
+
+        if (now - last_poll).total_seconds() > (window_sec + tolerance) and (now - rounded_now).total_seconds() > (window_sec / 2.0 + tolerance):
+            ratio = await fetch_long_short_ratio(future_symbol)
+            if ratio is not None:
+                last_poll = round_to_interval(datetime.datetime.now(), window_sec)
+                buffer.append(("long_short_ratio", ratio))
+
 async def subscribe_force_close(future_symbol, buffer):
     url = f'wss://fstream.binance.com/ws/{future_symbol.lower()}@forceOrder'
 
@@ -240,6 +271,7 @@ async def subscribe_force_close(future_symbol, buffer):
                     if 'S' not in o_data or 'q' not in o_data:
                         print(f"invalid force exit o_data {data}")
                         continue
+
                     long_liq = o_data['S'].lower() == "SELL".lower()
                     buffer.append(("force_exit", Decimal(o_data['q']), long_liq))
         except Exception as e:
@@ -248,7 +280,7 @@ async def subscribe_force_close(future_symbol, buffer):
 
 async def optional_aggregator(update_queue, buffer):
     while True:
-        await asyncio.sleep(TRADE_AGG_INTERVAL)
+        await asyncio.sleep(thread_interval)
         if not buffer:
             continue
 
@@ -256,12 +288,18 @@ async def optional_aggregator(update_queue, buffer):
         long_liq_qty = Decimal(0)
         short_liq_qty = Decimal(0)
         while buffer:
-            update_type, qty, long_liq = buffer.popleft()
+            data = buffer.popleft()
+            update_type = data[0]
+            update_data = data[1:]
             if update_type == 'force_exit':
+                qty, long_liq = update_data
                 if long_liq:
                     long_liq_qty += qty
                 else:
                     short_liq_qty += qty
+            elif update_type == 'long_short_ratio':
+                ratio, = update_data
+                out['long_short_ratio_sample'] = ratio
 
         out['long_force_exit_qty_sum'] = float(long_liq_qty)
         out['short_force_exit_qty_sum'] = float(short_liq_qty)
@@ -274,7 +312,7 @@ async def subscribe_optional(queue, future_symbol):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
     buffer = deque()
-    await asyncio.gather(subscribe_force_close(future_symbol, buffer), optional_aggregator(queue, buffer))
+    await asyncio.gather(subscribe_force_close(future_symbol, buffer), optional_aggregator(queue, buffer), poll_ratio(future_symbol, buffer))
 
     while True:
         await asyncio.sleep(1)
