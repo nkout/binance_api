@@ -310,6 +310,46 @@ async def subscribe_force_close(future_symbol, buffer):
             print(f"Force exit WebSocket error {url}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
+async def subscribe_spread(future_symbol, buffer):
+    url = f"wss://fstream.binance.com/ws/{future_symbol.lower()}@markPrice"
+
+    while True:
+        try:
+            async with websockets.connect(url) as ws:
+                print(f"Connected to force exit stream {url}")
+                async for message in ws:
+                    data = json.loads(message)
+                    event_time = data["E"]
+                    mark_price = float(data["p"])
+                    index_price = float(data["i"])
+                    funding_rate = float(data["r"])
+                    est_funding_rate = float(data["P"])
+                    next_funding_time = data["T"]
+                    spread = (mark_price - index_price) / index_price * 100
+                    remaining_time = next_funding_time / 1000 - datetime.datetime.now().timestamp()
+                    buffer.append(("spread", mark_price, index_price, funding_rate, est_funding_rate, spread, remaining_time))
+        except Exception as e:
+            print(f"Force exit WebSocket error {url}: {e}, reconnecting in 2s...")
+            await asyncio.sleep(2)
+
+def get_optional_header_samples():
+    return [
+        'mark_price_sample',
+        'index_price_sample',
+        'funding_rate_sample',
+        'est_funding_rate_sample',
+        'spread_sample',
+        'remaining_time_sample',
+        'long_short_ratio_sample',
+        'open_interest_sample',
+    ]
+
+def get_optional_header_sum():
+    return [
+        'long_force_exit_qty_sum',
+        'short_force_exit_qty_sum'
+    ]
+
 async def optional_aggregator(update_queue, buffer):
     while True:
         await asyncio.sleep(thread_interval)
@@ -317,8 +357,11 @@ async def optional_aggregator(update_queue, buffer):
             continue
 
         out = {'type': 'optional', 'market_type': "optional"}
-        long_liq_qty = Decimal(0)
-        short_liq_qty = Decimal(0)
+        for x in get_optional_header_samples():
+            out[x] = []
+        for x in get_optional_header_sum():
+            out[x] = 0.0
+
         while buffer:
             data = buffer.popleft()
             update_type = data[0]
@@ -326,19 +369,23 @@ async def optional_aggregator(update_queue, buffer):
             if update_type == 'force_exit':
                 qty, long_liq = update_data
                 if long_liq:
-                    long_liq_qty += qty
+                    out['long_force_exit_qty_sum'] += float(qty)
                 else:
-                    short_liq_qty += qty
+                    out['short_force_exit_qty_sum'] += float(qty)
             elif update_type == 'long_short_ratio':
                 ratio, = update_data
-                out['long_short_ratio_sample'] = ratio
+                out['long_short_ratio_sample'].append(ratio)
             elif update_type == 'open_interest':
                 open_interest, = update_data
-                out['open_interest_sample'] = open_interest
-
-
-        out['long_force_exit_qty_sum'] = float(long_liq_qty)
-        out['short_force_exit_qty_sum'] = float(short_liq_qty)
+                out['open_interest_sample'].append(open_interest)
+            elif update_type == 'spread':
+                mark_price, index_price, funding_rate, est_funding_rate, spread, remaining_time = update_data
+                out['mark_price_sample'].append(mark_price)
+                out['index_price_sample'].append(index_price)
+                out['funding_rate_sample'].append(funding_rate)
+                out['est_funding_rate_sample'].append(est_funding_rate)
+                out['spread_sample'].append(spread)
+                out['remaining_time_sample'].append(remaining_time)
         update_queue.put(out)
 
 
@@ -349,6 +396,7 @@ async def subscribe_optional(queue, future_symbol):
 
     buffer = deque()
     await asyncio.gather(subscribe_force_close(future_symbol, buffer),
+                         subscribe_spread(future_symbol, buffer),
                          poll_ratio(future_symbol, buffer),
                          poll_open_interest(future_symbol, buffer),
                          optional_aggregator(queue, buffer))
