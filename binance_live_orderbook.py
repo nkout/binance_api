@@ -19,7 +19,7 @@ FUTURE_SYMBOL = "BTCUSDT"
 outfile_prefix="out"
 
 tolerance = 0.000001
-liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04]
+liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.25, 0.30, 0.40]
 window_sec = 15
 thread_interval = 0.2  # seconds (200ms)
 
@@ -601,7 +601,7 @@ def stats_calculator(update_queue):
                     future_header = ["future_" + x for x in get_header()]
                     optional_header = ["opt_" + x for x in get_optional_header_sum()] + ["opt_" + x for x in get_optional_header_samples()]
                     full_header = [val for pair in zip(spot_header, future_header) for val in pair] + optional_header
-                    print(full_header)
+                    #print(full_header)
                     writer.writerow(full_header)
                     line_count += 1
                     header_printed = True
@@ -610,7 +610,7 @@ def stats_calculator(update_queue):
                 optional_line = get_optional_stats(optional_stats)
                 if spot_line and future_line and optional_line:
                     line = [val for pair in zip(spot_line, future_line) for val in pair] + optional_line
-                    print(line)
+                    #print(line)
                     writer.writerow(line)
                     line_count += 1
 
