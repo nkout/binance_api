@@ -536,14 +536,11 @@ def get_optional_stats(stats):
 
     for i, p in enumerate(get_optional_header_sum() + get_optional_header_samples()):
         if p in (get_optional_header_sum()):
-            print(f'sum {p}: {stats[i]}')
             line.append(sum(stats[i]))
         else:
-            print(f'median {p}: {stats[i]}')
             if len(stats[i]) > 0:
                 line.append(calc_median(stats[i]))
             else:
-                print(f'empty {p}')
                 line.append(-1)
     return line
 
@@ -579,7 +576,7 @@ def stats_calculator(update_queue):
         writer = csv.writer(f, delimiter=';')
         while not exit_received:
             try:
-                update = update_queue.get(timeout=15)
+                update = update_queue.get(timeout=1)
                 now = datetime.datetime.now()
 
                 if (now - last_print).total_seconds() > window_sec + tolerance:
@@ -606,13 +603,10 @@ def stats_calculator(update_queue):
                 update_stats(spot_stats, update)
                 update_stats(future_stats, update)
                 update_optional_stats(optional_stats, update)
-                if update['market_type'] == "optional":
-                    print(f"update {update}")
             except KeyboardInterrupt:
                 exit_received = True
             except Exception as e:
                 print(f"stats calculation exception {type(e).__name__}: {e}")
-                raise
 
 def my_main_shutdown():
     print("Shutting down all processes...")
