@@ -333,7 +333,7 @@ async def subscribe_spread(future_symbol, buffer):
             await asyncio.sleep(2)
 
 def get_optional_header_samples():
-    return [
+    return sorted([
         'mark_price_sample',
         'index_price_sample',
         'funding_rate_sample',
@@ -342,13 +342,13 @@ def get_optional_header_samples():
         'remaining_time_sample',
         'long_short_ratio_sample',
         'open_interest_sample',
-    ]
+    ])
 
 def get_optional_header_sum():
-    return [
+    return sorted([
         'long_force_exit_qty_sum',
         'short_force_exit_qty_sum'
-    ]
+    ])
 
 async def optional_aggregator(update_queue, buffer):
     while True:
@@ -415,6 +415,10 @@ def init_stats(stats, market_type):
         stats['liq_levels'].append([[],[],[]])
     stats['trades'] = [[],[],[],[],[],[]]
 
+def init_optional_stats(stats):
+    for _ in (get_optional_header_samples() + get_optional_header_sum()):
+        stats.append([])
+
 def update_stats(stats, update):
     if update['market_type'] != stats['market_type']:
         return
@@ -438,6 +442,16 @@ def update_stats(stats, update):
     else:
         print('wrong update type')
 
+def update_optional_stats(stats, update):
+    if update['market_type'] != 'optional':
+        return
+    for i, p in enumerate(get_optional_header_sum() + get_optional_header_samples()):
+        if p in (get_optional_header_sum()):
+            stats[i].append(update[p])
+        else:
+            for u in update[p]:
+                stats[i].append(u)
+
 def reset_stats(stats):
     stats["best_prices"][0].clear()
     stats["best_prices"][1].clear()
@@ -455,6 +469,10 @@ def reset_stats(stats):
     stats["trades"][4].clear()
     stats["trades"][5].clear()
 
+def reset_optional_stats(stats):
+    for i, _ in enumerate(get_optional_header_sum() + get_optional_header_samples()):
+        stats[i].clear()
+
 def calc_stats(line):
     arr = np.array(line)
     min_val = np.min(arr).item()
@@ -465,6 +483,11 @@ def calc_stats(line):
     #q75 = np.percentile(arr, 75).item()
     #return [len(line), line[0], line[-1], mean_val, min_val,  q25, q50, q75, max_val]
     return [len(line), line[0], line[-1], min_val, q50, max_val]
+
+def calc_median(line):
+    arr = np.array(line)
+    q50 = np.percentile(arr, 50).item()
+    return q50
 
 def stats_header():
     #return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
@@ -508,6 +531,22 @@ def get_stats(now, stats):
 
     return line
 
+def get_optional_stats(stats):
+    line  = []
+
+    for i, p in enumerate(get_optional_header_sum() + get_optional_header_samples()):
+        if p in (get_optional_header_sum()):
+            print(f'sum {p}: {stats[i]}')
+            line.append(sum(stats[i]))
+        else:
+            print(f'median {p}: {stats[i]}')
+            if len(stats[i]) > 0:
+                line.append(calc_median(stats[i]))
+            else:
+                print(f'empty {p}')
+                line.append(-1)
+    return line
+
 def round_to_interval(dt, seconds):
     # Convert to seconds since epoch
     epoch = dt.timestamp()
@@ -527,8 +566,10 @@ def stats_calculator(update_queue):
 
     spot_stats = {}
     future_stats = {}
+    optional_stats = []
     init_stats(spot_stats, "spot")
     init_stats(future_stats, "future")
+    init_optional_stats(optional_stats)
     header_printed = False
     exit_received = False
 
@@ -538,35 +579,40 @@ def stats_calculator(update_queue):
         writer = csv.writer(f, delimiter=';')
         while not exit_received:
             try:
-                update = update_queue.get(timeout=1)
+                update = update_queue.get(timeout=15)
                 now = datetime.datetime.now()
 
                 if (now - last_print).total_seconds() > window_sec + tolerance:
                     if not header_printed:
                         spot_header = ["spot_" + x for x in get_header()]
                         future_header = ["future_" + x for x in get_header()]
-                        full_header = [val for pair in zip(spot_header, future_header) for val in pair]
+                        optional_header = ["opt_" + x for x in get_optional_header_sum()] + ["opt_" + x for x in get_optional_header_samples()]
+                        full_header = [val for pair in zip(spot_header, future_header) for val in pair] + optional_header
                         print(full_header)
                         writer.writerow(full_header)
                         header_printed = True
                     spot_line = get_stats(last_print, spot_stats)
                     future_line = get_stats(last_print, future_stats)
-                    if spot_line and future_line:
-                        line = [val for pair in zip(spot_line, future_line) for val in pair]
+                    optional_line = get_optional_stats(optional_stats)
+                    if spot_line and future_line and optional_line:
+                        line = [val for pair in zip(spot_line, future_line) for val in pair] + optional_line
                         print(line)
                         writer.writerow(line)
                     reset_stats(spot_stats)
                     reset_stats(future_stats)
+                    reset_optional_stats(optional_stats)
                     last_print = round_to_interval(now, window_sec)
 
                 update_stats(spot_stats, update)
                 update_stats(future_stats, update)
+                update_optional_stats(optional_stats, update)
                 if update['market_type'] == "optional":
                     print(f"update {update}")
             except KeyboardInterrupt:
                 exit_received = True
             except Exception as e:
                 print(f"stats calculation exception {type(e).__name__}: {e}")
+                raise
 
 def my_main_shutdown():
     print("Shutting down all processes...")
