@@ -11,15 +11,19 @@ import signal
 import sys
 from collections import deque
 import time
+import random
+import string
 
 SPOT_SYMBOL = "BTCUSDC"
 FUTURE_SYMBOL = "BTCUSDT"
-outfile="out.csv"
+outfile_prefix="out"
 
 tolerance = 0.000001
 liq_steps = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04]
 window_sec = 15
 thread_interval = 0.2  # seconds (200ms)
+
+max_lines_per_file = 24 * 3600 / (15 * 6) #6 files per day
 
 processes = []
 
@@ -571,42 +575,63 @@ def stats_calculator(update_queue):
     exit_received = False
 
     last_print = round_to_interval(datetime.datetime.now(), window_sec)
+    line_count = 0
+    f = None
+    file_index = -1
+    random_prefix = ''.join(random.choices(string.ascii_lowercase, k=5))
+    writer = None
 
-    with open(outfile, "w") as f:
-        writer = csv.writer(f, delimiter=';')
-        while not exit_received:
-            try:
-                update = update_queue.get(timeout=1)
-                now = datetime.datetime.now()
+    # with open(outfile, "w") as f:
+    #     writer = csv.writer(f, delimiter=';')
+    while not exit_received:
+        try:
+            if f is None:
+                file_index += 1
+                f = open(f"{outfile_prefix}.{random_prefix}.{file_index:05}.{datetime.datetime.now().strftime("%y%m%d")}.csv", "w")
+                line_count = 0
+                header_printed = False
+                writer = csv.writer(f, delimiter=';')
 
-                if (now - last_print).total_seconds() > window_sec + tolerance:
-                    if not header_printed:
-                        spot_header = ["spot_" + x for x in get_header()]
-                        future_header = ["future_" + x for x in get_header()]
-                        optional_header = ["opt_" + x for x in get_optional_header_sum()] + ["opt_" + x for x in get_optional_header_samples()]
-                        full_header = [val for pair in zip(spot_header, future_header) for val in pair] + optional_header
-                        print(full_header)
-                        writer.writerow(full_header)
-                        header_printed = True
-                    spot_line = get_stats(last_print, spot_stats)
-                    future_line = get_stats(last_print, future_stats)
-                    optional_line = get_optional_stats(optional_stats)
-                    if spot_line and future_line and optional_line:
-                        line = [val for pair in zip(spot_line, future_line) for val in pair] + optional_line
-                        print(line)
-                        writer.writerow(line)
-                    reset_stats(spot_stats)
-                    reset_stats(future_stats)
-                    reset_optional_stats(optional_stats)
-                    last_print = round_to_interval(now, window_sec)
+            update = update_queue.get(timeout=1)
+            now = datetime.datetime.now()
 
-                update_stats(spot_stats, update)
-                update_stats(future_stats, update)
-                update_optional_stats(optional_stats, update)
-            except KeyboardInterrupt:
-                exit_received = True
-            except Exception as e:
-                print(f"stats calculation exception {type(e).__name__}: {e}")
+            if (now - last_print).total_seconds() > window_sec + tolerance:
+                if not header_printed:
+                    spot_header = ["spot_" + x for x in get_header()]
+                    future_header = ["future_" + x for x in get_header()]
+                    optional_header = ["opt_" + x for x in get_optional_header_sum()] + ["opt_" + x for x in get_optional_header_samples()]
+                    full_header = [val for pair in zip(spot_header, future_header) for val in pair] + optional_header
+                    print(full_header)
+                    writer.writerow(full_header)
+                    line_count += 1
+                    header_printed = True
+                spot_line = get_stats(last_print, spot_stats)
+                future_line = get_stats(last_print, future_stats)
+                optional_line = get_optional_stats(optional_stats)
+                if spot_line and future_line and optional_line:
+                    line = [val for pair in zip(spot_line, future_line) for val in pair] + optional_line
+                    print(line)
+                    writer.writerow(line)
+                    line_count += 1
+
+                    if line_count > max_lines_per_file:
+                        f.close()
+                        f = None
+                reset_stats(spot_stats)
+                reset_stats(future_stats)
+                reset_optional_stats(optional_stats)
+                last_print = round_to_interval(now, window_sec)
+
+            update_stats(spot_stats, update)
+            update_stats(future_stats, update)
+            update_optional_stats(optional_stats, update)
+        except KeyboardInterrupt:
+            exit_received = True
+        except Exception as e:
+            print(f"stats calculation exception {type(e).__name__}: {e}")
+
+    if f is not None:
+        f.close()
 
 def my_main_shutdown():
     print("Shutting down all processes...")
