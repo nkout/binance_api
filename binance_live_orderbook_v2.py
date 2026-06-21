@@ -70,8 +70,9 @@ async def fetch_snapshot(spot_snapshot_url, order_book):
                     print(f"Snapshot loaded {spot_snapshot_url} : {len(order_book['bids'])} bids, {len(order_book['asks'])} asks")
                     return
         except Exception as e:
-            print(f"Attempt {attempt} failed on {spot_snapshot_url}: {e}, retrying in {2 ** attempt}s...")
-            await asyncio.sleep(2 ** attempt)
+            wait = min(2 ** attempt, 60)
+            print(f"Attempt {attempt} failed on {spot_snapshot_url}: {e}, retrying in {wait}s...")
+            await asyncio.sleep(wait)
             attempt += 1
 
 
@@ -150,9 +151,9 @@ async def subscribe_orderbook(update_queue, spot_snapshot_url, spot_prices_ws_ur
 
     order_book = {'bids': {}, 'asks': {}, 'last_update': None}
     await fetch_snapshot(spot_snapshot_url, order_book)
+    # handle_orderbook_ws() loops forever internally (reconnect loop), so
+    # this call never returns under normal operation -- no code after it runs.
     await handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book, market_type)
-    while True:
-        await asyncio.sleep(1)
 
 
 def orderbook_subscriber(queue, spot_snapshot_url, spot_prices_ws_url, market_type):
@@ -232,9 +233,9 @@ async def subscribe_trade(update_queue, spot_trade_ws_url, market_type):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
     trade_buffer = deque()
+    # asyncio.gather() never returns: both trade_ws() and trade_aggregator()
+    # loop forever internally -- no code after this call runs.
     await asyncio.gather(trade_ws(spot_trade_ws_url, trade_buffer), trade_aggregator(update_queue, trade_buffer, market_type))
-    while True:
-        await asyncio.sleep(1)
 
 
 def trade_subscriber(queue, spot_trade_ws_url, market_type):
@@ -254,8 +255,9 @@ async def fetch_long_short_ratio(symbol):
                         #timestamp = int(data[0]["timestamp"])
                         return ratio
         except Exception as e:
-            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {2 ** attempt}s...")
-            await asyncio.sleep(2 ** attempt)
+            wait = min(2 ** attempt, 60)
+            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {wait}s...")
+            await asyncio.sleep(wait)
             attempt += 1
 
 
@@ -285,8 +287,9 @@ async def fetch_open_interest(symbol):
                         #timestamp = int(data[0]["timestamp"])
                         return open_interest
         except Exception as e:
-            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {2 ** attempt}s...")
-            await asyncio.sleep(2 ** attempt)
+            wait = min(2 ** attempt, 60)
+            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {wait}s...")
+            await asyncio.sleep(wait)
             attempt += 1
 
 
@@ -330,7 +333,7 @@ async def subscribe_spread(future_symbol, buffer):
     while True:
         try:
             async with websockets.connect(url) as ws:
-                print(f"Connected to force exit stream {url}")
+                print(f"Connected to mark price stream {url}")
                 async for message in ws:
                     data = json.loads(message)
                     event_time = data["E"]
@@ -343,7 +346,7 @@ async def subscribe_spread(future_symbol, buffer):
                     remaining_time = next_funding_time / 1000 - datetime.datetime.now().timestamp()
                     buffer.append(("spread", mark_price, index_price, funding_rate, est_funding_rate, spread, remaining_time))
         except Exception as e:
-            print(f"Force exit WebSocket error {url}: {e}, reconnecting in 2s...")
+            print(f"Mark price WebSocket error {url}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
 
@@ -414,13 +417,13 @@ async def subscribe_optional(queue, future_symbol):
         loop.add_signal_handler(sig, subscriber_shutdown)
 
     buffer = deque()
+    # asyncio.gather() never returns: all five coroutines loop forever
+    # internally -- no code after this call runs.
     await asyncio.gather(subscribe_force_close(future_symbol, buffer),
                           subscribe_spread(future_symbol, buffer),
                           poll_ratio(future_symbol, buffer),
                           poll_open_interest(future_symbol, buffer),
                           optional_aggregator(queue, buffer))
-    while True:
-        await asyncio.sleep(1)
 
 
 def optional_stats_subscriber(queue, future_symbol):
@@ -444,6 +447,11 @@ def init_optional_stats(stats):
 
 def update_stats(stats, update):
     if update['market_type'] != stats['market_type']:
+        return
+    if update['type'] == 'optional':
+        # Optional-stream updates are handled by update_optional_stats(),
+        # not here -- silently ignore instead of falling through to the
+        # 'wrong update type' branch below.
         return
 
     if update['type'] == 'prices':
@@ -699,6 +707,7 @@ def stats_calculator(update_queue):
                     full_header = [val for pair in zip(spot_header, future_header) for val in pair] + optional_header
                     #print(full_header)
                     writer.writerow(full_header)
+                    f.flush()
                     line_count += 1
                     header_printed = True
 
@@ -710,6 +719,7 @@ def stats_calculator(update_queue):
                     line = [val for pair in zip(spot_line, future_line) for val in pair] + optional_line
                     #print(line)
                     writer.writerow(line)
+                    f.flush()
                     line_count += 1
 
                 if line_count > max_lines_per_file:
