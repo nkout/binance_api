@@ -16,8 +16,9 @@ import string
 
 SPOT_SYMBOL = "BTCUSDC"
 FUTURE_SYMBOL = "BTCUSDT"
-SCHEMA_VERSION = 3
-outfile_prefix="out3"
+ETH_SYMBOL = "ETHUSDT"
+SCHEMA_VERSION = 4
+outfile_prefix="out4"
 tolerance = 0.000001
 # Shallow levels keep full bar stats; deep levels keep only the median
 # (models only ever used the deep medians -- saves ~240 columns per market).
@@ -25,6 +26,8 @@ liq_steps_full = [0.0, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.
 liq_steps_deep = [0.12, 0.14, 0.16, 0.18, 0.20, 0.25, 0.30, 0.40]
 liq_steps = liq_steps_full + liq_steps_deep
 NEAR_TOUCH_PCT = 0.05  # band around mid (in % of mid) for add/cancel flow metrics
+WIDE_TOUCH_PCT = 0.25  # second flow band; includes the near band (subtract offline)
+WALL_BAND_PCT = 0.30   # band scanned for the largest single resting level per side
 window_sec = 15
 thread_interval = 0.2 # seconds (200ms)
 max_lines_per_file = 24 * 3600 / (15 * 6) #6 files per day
@@ -53,6 +56,27 @@ def aggregate_liquidity(update_queue, liq_steps, order_book, market_type, flow=N
     out['micro_dev'] = micro - mid
 
     out['flow'] = flow  # per-message order-flow event metrics (may be None)
+
+    # Largest single resting level per side within WALL_BAND_PCT of mid --
+    # the cumulative liq bands below destroy per-level detail, so walls
+    # must be captured here or never.
+    wall_lo = best_bid * (1 - Decimal((WALL_BAND_PCT + tolerance) / 100))
+    wall_hi = best_ask * (1 + Decimal((WALL_BAND_PCT + tolerance) / 100))
+    bid_wall_p = bid_wall_q = None
+    for price, q in order_book['bids'].items():
+        if price >= wall_lo and (bid_wall_q is None or q > bid_wall_q):
+            bid_wall_p, bid_wall_q = price, q
+    ask_wall_p = ask_wall_q = None
+    for price, q in order_book['asks'].items():
+        if price <= wall_hi and (ask_wall_q is None or q > ask_wall_q):
+            ask_wall_p, ask_wall_q = price, q
+    out['wall'] = [
+        float(bid_wall_q) if bid_wall_q is not None else 0.0,
+        (mid - float(bid_wall_p)) / mid * 100 if bid_wall_p is not None else -1.0,
+        float(ask_wall_q) if ask_wall_q is not None else 0.0,
+        (float(ask_wall_p) - mid) / mid * 100 if ask_wall_p is not None else -1.0,
+    ]
+
     out['liq_levels'] = []
 
     for p in liq_steps:
@@ -106,31 +130,43 @@ def apply_depth_update(order_book, data):
     prev_qbb = float(bids[prev_bb]) if prev_bb is not None else 0.0
     prev_qba = float(asks[prev_ba]) if prev_ba is not None else 0.0
 
-    near_lo = near_hi = None
+    near_lo = near_hi = wide_lo = wide_hi = None
     if prev_bb is not None and prev_ba is not None:
         prev_mid = (prev_bb + prev_ba) / 2
         band = prev_mid * Decimal(str(NEAR_TOUCH_PCT / 100.0))
+        wide_band = prev_mid * Decimal(str(WIDE_TOUCH_PCT / 100.0))
         near_lo, near_hi = prev_mid - band, prev_mid + band
+        wide_lo, wide_hi = prev_mid - wide_band, prev_mid + wide_band
 
     add_bid = cancel_bid = add_ask = cancel_ask = 0.0
+    add_bid_w = cancel_bid_w = add_ask_w = cancel_ask_w = 0.0
 
     for side, key in (('bids', 'b'), ('asks', 'a')):
         book = order_book[side]
         for price_str, qty_str in data.get(key, []):
             price = Decimal(price_str)
             qty = Decimal(qty_str)
-            if near_lo is not None and near_lo <= price <= near_hi:
+            if wide_lo is not None and wide_lo <= price <= wide_hi:
                 delta = float(qty - book.get(price, Decimal(0)))
+                in_near = near_lo <= price <= near_hi
                 if side == 'bids':
                     if delta > 0:
-                        add_bid += delta
+                        add_bid_w += delta
+                        if in_near:
+                            add_bid += delta
                     else:
-                        cancel_bid -= delta
+                        cancel_bid_w -= delta
+                        if in_near:
+                            cancel_bid -= delta
                 else:
                     if delta > 0:
-                        add_ask += delta
+                        add_ask_w += delta
+                        if in_near:
+                            add_ask += delta
                     else:
-                        cancel_ask -= delta
+                        cancel_ask_w -= delta
+                        if in_near:
+                            cancel_ask -= delta
             if qty == 0:
                 book.pop(price, None)
             else:
@@ -157,6 +193,8 @@ def apply_depth_update(order_book, data):
         'ofi': ofi,
         'add_bid_near': add_bid, 'cancel_bid_near': cancel_bid,
         'add_ask_near': add_ask, 'cancel_ask_near': cancel_ask,
+        'add_bid_wide': add_bid_w, 'cancel_bid_wide': cancel_bid_w,
+        'add_ask_wide': add_ask_w, 'cancel_ask_wide': cancel_ask_w,
         'best_bid_moved': 1 if new_bb != prev_bb else 0,
         'best_ask_moved': 1 if new_ba != prev_ba else 0,
         'bid_depleted': 1 if prev_bb not in bids else 0,
@@ -401,6 +439,23 @@ async def subscribe_force_close(future_symbol, buffer):
             await asyncio.sleep(2)
 
 
+async def subscribe_eth_mid(eth_symbol, buffer):
+    url = f"wss://fstream.binance.com/ws/{eth_symbol.lower()}@bookTicker"
+    while True:
+        try:
+            async with websockets.connect(url) as ws:
+                print(f"Connected to eth bookTicker stream {url}")
+                async for message in ws:
+                    data = json.loads(message)
+                    if 'b' not in data or 'a' not in data:
+                        continue
+                    mid = (float(data['b']) + float(data['a'])) / 2.0
+                    buffer.append(("eth_mid", mid))
+        except Exception as e:
+            print(f"ETH bookTicker WebSocket error {url}: {e}, reconnecting in 2s...")
+            await asyncio.sleep(2)
+
+
 async def subscribe_spread(future_symbol, buffer):
     url = f"wss://fstream.binance.com/ws/{future_symbol.lower()}@markPrice"
     while True:
@@ -453,6 +508,12 @@ def get_optional_header_max():
     ])
 
 
+def get_optional_header_ocm():
+    # keys whose bar output is [open, close, median] of the sample list
+    # (median-only would destroy the bar-return info needed for lead-lag)
+    return ['eth_mid']
+
+
 async def optional_aggregator(update_queue, buffer):
     while True:
         await asyncio.sleep(thread_interval)
@@ -460,7 +521,7 @@ async def optional_aggregator(update_queue, buffer):
             continue
 
         out = {'type': 'optional', 'market_type': "optional"}
-        for x in get_optional_header_samples():
+        for x in (get_optional_header_samples() + get_optional_header_ocm()):
             out[x] = []
         for x in (get_optional_header_sum() + get_optional_header_max()):
             out[x] = 0.0
@@ -481,6 +542,9 @@ async def optional_aggregator(update_queue, buffer):
                     out['short_force_exit_cnt_sum'] += 1
                     out['short_force_exit_notional_sum'] += notional
                 out['force_exit_notional_max'] = max(out['force_exit_notional_max'], notional)
+            elif update_type == 'eth_mid':
+                mid, = update_data
+                out['eth_mid'].append(mid)
             elif update_type == 'long_short_ratio':
                 ratio, = update_data
                 out['long_short_ratio_sample'].append(ratio)
@@ -509,6 +573,7 @@ async def subscribe_optional(queue, future_symbol):
     # internally -- no code after this call runs.
     await asyncio.gather(subscribe_force_close(future_symbol, buffer),
                           subscribe_spread(future_symbol, buffer),
+                          subscribe_eth_mid(ETH_SYMBOL, buffer),
                           poll_ratio(future_symbol, buffer),
                           poll_open_interest(future_symbol, buffer),
                           optional_aggregator(queue, buffer))
@@ -526,11 +591,37 @@ def flow_header():
         'cancel_bid_near_sum',  # qty removed from bids near mid (cancels + fills)
         'add_ask_near_sum',
         'cancel_ask_near_sum',
+        'add_bid_wide_sum',     # same within WIDE_TOUCH_PCT of mid (includes near band)
+        'cancel_bid_wide_sum',
+        'add_ask_wide_sum',
+        'cancel_ask_wide_sum',
         'depth_msg_count',      # depth diff messages in bar (book activity)
         'best_bid_move_count',  # times best bid price changed
         'best_ask_move_count',
         'bid_depletion_count',  # times the best bid level fully disappeared
         'ask_depletion_count',
+    ]
+
+
+def wall_header():
+    """Largest single resting level within WALL_BAND_PCT of mid, per side."""
+    return [
+        'bid_wall_qty_median',   # bar median of the per-message largest bid level
+        'bid_wall_qty_max',
+        'bid_wall_dist_median',  # its distance from mid, % of mid (-1 = no level in band)
+        'ask_wall_qty_median',
+        'ask_wall_qty_max',
+        'ask_wall_dist_median',
+    ]
+
+
+def burst_header():
+    """Trade burst / sweep proxies from sub-bar batches and trade sequence."""
+    return [
+        'max_batch_buy_qty',   # largest 200ms buy volume in the bar
+        'max_batch_sell_qty',
+        'max_buy_run_qty',     # largest consecutive same-side volume run (sweep proxy)
+        'max_sell_run_qty',
     ]
 
 
@@ -544,10 +635,11 @@ def init_stats(stats, market_type):
     stats['trade_seq'] = []  # accumulates (side, qty) across the full 15s bar, in arrival order
     stats['micro_dev'] = []  # microprice - mid, one sample per depth message
     stats['flow'] = [0.0] * len(flow_header())
+    stats['wall'] = [[], [], [], []]  # bid qty, bid dist, ask qty, ask dist per message
 
 
 def init_optional_stats(stats):
-    for _ in (get_optional_header_sum() + get_optional_header_max() + get_optional_header_samples()):
+    for _ in (get_optional_header_sum() + get_optional_header_max() + get_optional_header_samples() + get_optional_header_ocm()):
         stats.append([])
 
 
@@ -573,11 +665,20 @@ def update_stats(stats, update):
             stats['flow'][2] += fl['cancel_bid_near']
             stats['flow'][3] += fl['add_ask_near']
             stats['flow'][4] += fl['cancel_ask_near']
-            stats['flow'][5] += 1
-            stats['flow'][6] += fl['best_bid_moved']
-            stats['flow'][7] += fl['best_ask_moved']
-            stats['flow'][8] += fl['bid_depleted']
-            stats['flow'][9] += fl['ask_depleted']
+            stats['flow'][5] += fl['add_bid_wide']
+            stats['flow'][6] += fl['cancel_bid_wide']
+            stats['flow'][7] += fl['add_ask_wide']
+            stats['flow'][8] += fl['cancel_ask_wide']
+            stats['flow'][9] += 1
+            stats['flow'][10] += fl['best_bid_moved']
+            stats['flow'][11] += fl['best_ask_moved']
+            stats['flow'][12] += fl['bid_depleted']
+            stats['flow'][13] += fl['ask_depleted']
+
+        w = update.get('wall')
+        if w is not None:
+            for i in range(4):
+                stats['wall'][i].append(w[i])
 
         for c, p in enumerate(liq_steps):
             stats['liq_levels'][c][0].append(update['liq_levels'][c][0])
@@ -601,7 +702,7 @@ def update_optional_stats(stats, update):
 
     sums = get_optional_header_sum()
     maxes = get_optional_header_max()
-    for i, p in enumerate(sums + maxes + get_optional_header_samples()):
+    for i, p in enumerate(sums + maxes + get_optional_header_samples() + get_optional_header_ocm()):
         if p in sums or p in maxes:
             stats[i].append(update[p])
         else:
@@ -628,10 +729,12 @@ def reset_stats(stats):
     stats['trade_seq'].clear()
     stats['micro_dev'].clear()
     stats['flow'] = [0.0] * len(flow_header())
+    for w in stats['wall']:
+        w.clear()
 
 
 def reset_optional_stats(stats):
-    for i, _ in enumerate(get_optional_header_sum() + get_optional_header_max() + get_optional_header_samples()):
+    for i, _ in enumerate(get_optional_header_sum() + get_optional_header_max() + get_optional_header_samples() + get_optional_header_ocm()):
         stats[i].clear()
 
 
@@ -744,6 +847,34 @@ def calc_sub_bar_stats(trade_seq):
 
 
 
+def calc_wall_stats(wall):
+    line = []
+    for qs, ds in ((wall[0], wall[1]), (wall[2], wall[3])):
+        valid = [(q, d) for q, d in zip(qs, ds) if d >= 0]
+        if valid:
+            q = [v[0] for v in valid]
+            d = [v[1] for v in valid]
+            line += [calc_median(q), max(q), calc_median(d)]
+        else:
+            line += [0.0, 0.0, -1.0]
+    return line
+
+
+def calc_burst_stats(trades, trade_seq):
+    max_batch_buy = max(trades[0]) if trades[0] else 0.0
+    max_batch_sell = max(trades[1]) if trades[1] else 0.0
+    max_buy_run = max_sell_run = 0.0
+    run_side, run_qty = None, 0.0
+    for side, q in trade_seq:
+        run_qty = run_qty + q if side == run_side else q
+        run_side = side
+        if side == 'buy':
+            max_buy_run = max(max_buy_run, run_qty)
+        else:
+            max_sell_run = max(max_sell_run, run_qty)
+    return [max_batch_buy, max_batch_sell, max_buy_run, max_sell_run]
+
+
 def stats_header():
     #return ['samples', 'open', 'close', 'mean', 'min', '25perc', '50perc', '75perc', 'max']
     return ['samples', 'open', 'close', 'min', 'median', 'max']
@@ -759,6 +890,8 @@ def get_header():
     header += mid_vol_header()
     header += ['micro_dev_' + x for x in stats_header()]
     header += flow_header()
+    header += wall_header()
+    header += burst_header()
 
     for p in liq_steps_full:
         header += [f'bid_liq_{p:.4}_' + x for x in stats_header()]
@@ -791,6 +924,8 @@ def get_stats(now, stats):
     line += calc_mid_vol(stats["best_prices"][0], stats["best_prices"][1])
     line += calc_stats(stats['micro_dev'])
     line += list(stats['flow'])
+    line += calc_wall_stats(stats['wall'])
+    line += calc_burst_stats(stats["trades"], stats.get('trade_seq', []))
 
     n_full = len(liq_steps_full)
     for c in range(n_full):
@@ -809,11 +944,17 @@ def get_optional_stats(stats):
     line = []
     sums = get_optional_header_sum()
     maxes = get_optional_header_max()
-    for i, p in enumerate(sums + maxes + get_optional_header_samples()):
+    ocm = get_optional_header_ocm()
+    for i, p in enumerate(sums + maxes + get_optional_header_samples() + ocm):
         if p in sums:
             line.append(sum(stats[i]))
         elif p in maxes:
             line.append(max(stats[i]) if stats[i] else 0.0)
+        elif p in ocm:
+            if len(stats[i]) > 0:
+                line += [stats[i][0], stats[i][-1], calc_median(stats[i])]
+            else:
+                line += [-1, -1, -1]
         else:
             if len(stats[i]) > 0:
                 line.append(calc_median(stats[i]))
@@ -877,7 +1018,8 @@ def stats_calculator(update_queue):
                     future_header = ["future_" + x for x in get_header()]
                     optional_header = ["opt_" + x for x in get_optional_header_sum()] \
                                     + ["opt_" + x for x in get_optional_header_max()] \
-                                    + ["opt_" + x for x in get_optional_header_samples()]
+                                    + ["opt_" + x for x in get_optional_header_samples()] \
+                                    + [f"opt_{x}_{s}" for x in get_optional_header_ocm() for s in ('open', 'close', 'median')]
                     full_header = [val for pair in zip(spot_header, future_header) for val in pair] + optional_header + ['schema_version']
                     #print(full_header)
                     writer.writerow(full_header)
