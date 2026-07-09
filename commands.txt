@@ -1,0 +1,4 @@
+pyenv activate trading..3.13.7
+while : ; do ls -tr | grep csv$ | grep -v `date -d yesterday +%y%m%d`.csv | grep -v `date +%y%m%d`.csv | head -n 10 | xargs -I {} gzip {} ; echo -n . ; sleep 200 ; done
+PKEY=/home/akoutsianas/binance_api/nikos_git/id_ed25519 GIT_SSH=ssh_custom_key git push  ssh_origin main
+tmux capture-pane -pS - -t $(tmux display-message -p '#I') > ~/tmux-scroll.txt
