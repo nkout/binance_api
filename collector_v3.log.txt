@@ -1,0 +1,515 @@
+(trading..3.13.7) akoutsianas@akoutsianas-MS-7D22:~/binance_api/v3/binance_api$ python binance_live_orderbook_v3.py
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks
+Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+stats calculation exception Empty:
+Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed updates, resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+^[OPWebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+Missed updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Attempt 1 failed on https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 2s...
+Attempt 1 failed on https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Attempt 2 failed on https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 4s...
+Attempt 2 failed on https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 4s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Attempt 3 failed on https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 8s...
+Attempt 3 failed on https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 8s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Attempt 4 failed on https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 16s...
+Attempt 4 failed on https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 16s...
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Attempt 5 failed on https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 32s...
+Attempt 5 failed on https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 32s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... [Errno -3] Temporary failure in name resolution
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: [Errno -3] Temporary failure in name resolution, reconnecting in 2s...
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+stats calculation exception Empty:
+Missed updates, resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+gap......
+Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+gap......
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: no close frame received or sent, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: no close frame received or sent, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: no close frame received or sent, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: no close frame received or sent, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: no close frame received or sent, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: no close frame received or sent, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+stats calculation exception Empty:
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+stats calculation exception Empty:
+Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+stats calculation exception Empty:
+Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+Missed updates, resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+gap......
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+gap......
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+stats calculation exception Empty:
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+gap......
+Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+gap......
+Missed updates, resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: 'p', reconnecting in 2s...
+Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+gap......
+Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+Missed updates, resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks
+ignore past update of wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying... sent 1011 (internal error) keepalive ping timeout; no close frame received
+Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+Missed future updates, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+ignore past update of wss://fstream.binance.com/ws/btcusdt@depth@100ms
+
