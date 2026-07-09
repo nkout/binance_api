@@ -2,6 +2,8 @@ import asyncio
 import aiohttp
 import websockets
 import json
+import queue as queue_mod
+import traceback
 from decimal import Decimal
 import multiprocessing as mp
 import numpy as np
@@ -32,6 +34,11 @@ window_sec = 15
 thread_interval = 0.2 # seconds (200ms)
 max_lines_per_file = 24 * 3600 / (15 * 6) #6 files per day
 processes = []
+
+
+def log(msg):
+    """Timestamped log line -- gap analysis needs to know when and how long."""
+    print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
 
 
 def aggregate_liquidity(update_queue, liq_steps, order_book, market_type, flow=None):
@@ -109,11 +116,11 @@ async def fetch_snapshot(spot_snapshot_url, order_book):
                     order_book['bids'] = {Decimal(p): Decimal(q) for p, q in bids}
                     order_book['asks'] = {Decimal(p): Decimal(q) for p, q in asks}
                     order_book['last_update'] = data['lastUpdateId']
-                    print(f"Snapshot loaded {spot_snapshot_url} : {len(order_book['bids'])} bids, {len(order_book['asks'])} asks")
+                    log(f"Snapshot loaded {spot_snapshot_url} : {len(order_book['bids'])} bids, {len(order_book['asks'])} asks, lastUpdateId={order_book['last_update']}")
                     return
         except Exception as e:
             wait = min(2 ** attempt, 60)
-            print(f"Attempt {attempt} failed on {spot_snapshot_url}: {e}, retrying in {wait}s...")
+            log(f"Snapshot attempt {attempt} failed on {spot_snapshot_url}: {type(e).__name__}: {e}, retrying in {wait}s...")
             await asyncio.sleep(wait)
             attempt += 1
 
@@ -204,10 +211,15 @@ def apply_depth_update(order_book, data):
 
 async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_url, order_book, market_type):
     first_sync = True
+    disconnected_at = None
     while True:
         try:
             async with websockets.connect(spot_prices_ws_url) as ws:
-                print(f"Orderbook WebSocket connected {spot_prices_ws_url}")
+                if disconnected_at is not None:
+                    log(f"Orderbook WebSocket reconnected {spot_prices_ws_url} after {time.time() - disconnected_at:.1f}s offline")
+                    disconnected_at = None
+                else:
+                    log(f"Orderbook WebSocket connected {spot_prices_ws_url}")
                 async for message in ws:
                     data = json.loads(message)
                     if 'u' not in data or 'U' not in data:
@@ -223,17 +235,19 @@ async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_ur
 
                     if market_type == "spot" or first_sync:
                         if data['U'] > order_book['last_update'] + 1:
-                            print(f"Missed updates, resyncing snapshot {spot_snapshot_url}...")
+                            log(f"Missed updates on {spot_prices_ws_url}: message U={data['U']} > expected {order_book['last_update'] + 1} "
+                                f"({data['U'] - order_book['last_update'] - 1} updates lost), resyncing snapshot {spot_snapshot_url}...")
                             order_book['last_update'] = None
                             await fetch_snapshot(spot_snapshot_url, order_book)
                             first_sync = True
                             continue
                         if data['u'] < order_book['last_update'] + 1:
-                            print(f"ignore past update of {spot_prices_ws_url}")
+                            log(f"Ignoring past update on {spot_prices_ws_url}: message u={data['u']} < expected {order_book['last_update'] + 1}")
                             continue
                     else:
                         if data['pu'] != order_book['last_update']:
-                            print(f"Missed future updates, resyncing snapshot {spot_snapshot_url}...")
+                            log(f"Missed future updates on {spot_prices_ws_url}: message pu={data['pu']} != last applied u={order_book['last_update']}, "
+                                f"resyncing snapshot {spot_snapshot_url}...")
                             order_book['last_update'] = None
                             await fetch_snapshot(spot_snapshot_url, order_book)
                             first_sync = True
@@ -245,7 +259,9 @@ async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_ur
                     flow = apply_depth_update(order_book, data)
                     aggregate_liquidity(update_queue, liq_steps, order_book, market_type, flow)
         except Exception as e:
-            print(f"WebSocket disconnected {spot_prices_ws_url}, retrying... {e}")
+            if disconnected_at is None:
+                disconnected_at = time.time()
+            log(f"Orderbook WebSocket disconnected {spot_prices_ws_url}, retrying in 2s... {type(e).__name__}: {e}")
             await asyncio.sleep(2)
 
 
@@ -271,21 +287,29 @@ def orderbook_subscriber(queue, spot_snapshot_url, spot_prices_ws_url, market_ty
 
 async def trade_ws(spot_trade_ws_url, trade_buffer):
     latest_id = 0
+    disconnected_at = None
     while True:
         try:
             async with websockets.connect(spot_trade_ws_url) as ws:
-                print(f"Connected to trade stream {spot_trade_ws_url}")
+                if disconnected_at is not None:
+                    log(f"Reconnected to trade stream {spot_trade_ws_url} after {time.time() - disconnected_at:.1f}s offline")
+                    disconnected_at = None
+                else:
+                    log(f"Connected to trade stream {spot_trade_ws_url}")
                 async for message in ws:
                     data = json.loads(message)
                     price = Decimal(data['p'])
                     qty = Decimal(data['q'])
                     is_buyer_maker = data['m']  # True = sell, False = buy
                     if latest_id > 0 and data['t'] != latest_id + 1:
-                        print("gap......")
+                        log(f"Trade ID gap on {spot_trade_ws_url}: expected {latest_id + 1}, got {data['t']} "
+                            f"({data['t'] - latest_id - 1} trades missed)")
                     latest_id = data['t']
                     trade_buffer.append((price, qty, is_buyer_maker))
         except Exception as e:
-            print(f"Trade WebSocket error {spot_trade_ws_url}: {e}, reconnecting in 2s...")
+            if disconnected_at is None:
+                disconnected_at = time.time()
+            log(f"Trade WebSocket error {spot_trade_ws_url}: {type(e).__name__}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
 
@@ -365,7 +389,7 @@ async def fetch_long_short_ratio(symbol):
                         return ratio
         except Exception as e:
             wait = min(2 ** attempt, 60)
-            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {wait}s...")
+            log(f"Long/short ratio attempt {attempt} failed on {url}: {type(e).__name__}: {e}, retrying in {wait}s...")
             await asyncio.sleep(wait)
             attempt += 1
 
@@ -397,7 +421,7 @@ async def fetch_open_interest(symbol):
                         return open_interest
         except Exception as e:
             wait = min(2 ** attempt, 60)
-            print(f"Attempt {attempt} failed on {url}: {e}, retrying in {wait}s...")
+            log(f"Open interest attempt {attempt} failed on {url}: {type(e).__name__}: {e}, retrying in {wait}s...")
             await asyncio.sleep(wait)
             attempt += 1
 
@@ -420,22 +444,22 @@ async def subscribe_force_close(future_symbol, buffer):
     while True:
         try:
             async with websockets.connect(url) as ws:
-                print(f"Connected to force exit stream {url}")
+                log(f"Connected to force exit stream {url}")
                 async for message in ws:
                     data = json.loads(message)
                     if 'e' not in data or 'o' not in data or data['e'] != 'forceOrder':
-                        print(f"invalid force exit data {data}")
+                        log(f"invalid force exit data {data}")
                         continue
                     o_data = data['o']
                     if 'S' not in o_data or 'q' not in o_data:
-                        print(f"invalid force exit o_data {data}")
+                        log(f"invalid force exit o_data {data}")
                         continue
                     long_liq = o_data['S'].lower() == "SELL".lower()
                     qty = Decimal(o_data['q'])
                     avg_price = Decimal(o_data.get('ap') or o_data.get('p') or 0)
                     buffer.append(("force_exit", qty, long_liq, float(avg_price * qty)))
         except Exception as e:
-            print(f"Force exit WebSocket error {url}: {e}, reconnecting in 2s...")
+            log(f"Force exit WebSocket error {url}: {type(e).__name__}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
 
@@ -444,7 +468,7 @@ async def subscribe_eth_mid(eth_symbol, buffer):
     while True:
         try:
             async with websockets.connect(url) as ws:
-                print(f"Connected to eth bookTicker stream {url}")
+                log(f"Connected to eth bookTicker stream {url}")
                 async for message in ws:
                     data = json.loads(message)
                     if 'b' not in data or 'a' not in data:
@@ -452,7 +476,7 @@ async def subscribe_eth_mid(eth_symbol, buffer):
                     mid = (float(data['b']) + float(data['a'])) / 2.0
                     buffer.append(("eth_mid", mid))
         except Exception as e:
-            print(f"ETH bookTicker WebSocket error {url}: {e}, reconnecting in 2s...")
+            log(f"ETH bookTicker WebSocket error {url}: {type(e).__name__}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
 
@@ -461,7 +485,7 @@ async def subscribe_spread(future_symbol, buffer):
     while True:
         try:
             async with websockets.connect(url) as ws:
-                print(f"Connected to mark price stream {url}")
+                log(f"Connected to mark price stream {url}")
                 async for message in ws:
                     data = json.loads(message)
                     event_time = data["E"]
@@ -474,7 +498,7 @@ async def subscribe_spread(future_symbol, buffer):
                     remaining_time = next_funding_time / 1000 - datetime.datetime.now().timestamp()
                     buffer.append(("spread", mark_price, index_price, funding_rate, est_funding_rate, spread, remaining_time))
         except Exception as e:
-            print(f"Mark price WebSocket error {url}: {e}, reconnecting in 2s...")
+            log(f"Mark price WebSocket error {url}: {type(e).__name__}: {e}, reconnecting in 2s...")
             await asyncio.sleep(2)
 
 
@@ -693,7 +717,7 @@ def update_stats(stats, update):
         stats["trades"][5].append(update['sell_samples'])
         stats['trade_seq'].extend(update.get('trade_seq', []))
     else:
-        print('wrong update type')
+        log(f"wrong update type '{update.get('type')}' for market '{update.get('market_type')}'")
 
 
 def update_optional_stats(stats, update):
@@ -997,6 +1021,7 @@ def stats_calculator(update_queue):
     file_index = -1
     random_prefix = ''.join(random.choices(string.ascii_lowercase, k=5))
     writer = None
+    idle_since = None  # start of a period with no queue updates (feed outage)
 
     # with open(outfile, "w") as f:
     #     writer = csv.writer(f, delimiter=';')
@@ -1009,8 +1034,21 @@ def stats_calculator(update_queue):
                 header_printed = False
                 writer = csv.writer(f, delimiter=';')
 
-            update = update_queue.get(timeout=1)
+            try:
+                update = update_queue.get(timeout=1)
+            except queue_mod.Empty:
+                # No data from any subscriber for 1s -- normal only for very
+                # short blips; longer means all feeds are down (e.g. network
+                # outage). NOTE: bar emission below only runs when an update
+                # arrives, so nothing is written to the CSV while idle.
+                if idle_since is None:
+                    idle_since = datetime.datetime.now()
+                continue
             now = datetime.datetime.now()
+            if idle_since is not None:
+                log(f"update queue was empty for {(now - idle_since).total_seconds():.1f}s "
+                    f"(all feeds silent -- no CSV rows written in that period)")
+                idle_since = None
 
             if (now - last_print).total_seconds() > window_sec + tolerance:
                 if not header_printed:
@@ -1037,6 +1075,11 @@ def stats_calculator(update_queue):
                     writer.writerow(line)
                     f.flush()
                     line_count += 1
+                else:
+                    missing = [name for name, l in (("spot", spot_line), ("future", future_line), ("optional", optional_line)) if not l]
+                    log(f"CSV bar at {last_print} skipped: no data from {', '.join(missing)} "
+                        f"(spot samples: prices={len(spot_stats['best_prices'][0])} trades={len(spot_stats['trades'][0])}, "
+                        f"future samples: prices={len(future_stats['best_prices'][0])} trades={len(future_stats['trades'][0])})")
 
                 if line_count > max_lines_per_file:
                     f.close()
@@ -1054,14 +1097,14 @@ def stats_calculator(update_queue):
         except KeyboardInterrupt:
             exit_received = True
         except Exception as e:
-            print(f"stats calculation exception {type(e).__name__}: {e}")
+            log(f"stats calculation exception {type(e).__name__}: {e}\n{traceback.format_exc()}")
 
     if f is not None:
         f.close()
 
 
 def my_main_shutdown():
-    print("Shutting down all processes...")
+    log("Shutting down all processes...")
     for p in processes:
         if p.is_alive():
             p.terminate()
