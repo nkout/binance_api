@@ -1,4 +1,5 @@
 import asyncio
+import bisect
 import aiohttp
 import websockets
 import json
@@ -32,6 +33,12 @@ WIDE_TOUCH_PCT = 0.25  # second flow band; includes the near band (subtract offl
 WALL_BAND_PCT = 0.30   # band scanned for the largest single resting level per side
 window_sec = 15
 thread_interval = 0.2 # seconds (200ms)
+# Keepalive tuning for all streams: default ping_timeout=20s caused 1011
+# disconnects whenever a pong was delayed (busy receive loop or short
+# network stall). max_queue default is 32 frames -- when full, the library
+# stops reading, pongs go unseen and the keepalive times out, so give the
+# bursty depth streams real headroom.
+ws_connect_kwargs = dict(ping_interval=20, ping_timeout=60, max_queue=1024)
 max_lines_per_file = 24 * 3600 / (15 * 6) #6 files per day
 processes = []
 
@@ -64,36 +71,53 @@ def aggregate_liquidity(update_queue, liq_steps, order_book, market_type, flow=N
 
     out['flow'] = flow  # per-message order-flow event metrics (may be None)
 
-    # Largest single resting level per side within WALL_BAND_PCT of mid --
-    # the cumulative liq bands below destroy per-level detail, so walls
-    # must be captured here or never.
-    wall_lo = best_bid * (1 - Decimal((WALL_BAND_PCT + tolerance) / 100))
-    wall_hi = best_ask * (1 + Decimal((WALL_BAND_PCT + tolerance) / 100))
-    bid_wall_p = bid_wall_q = None
+    # Single pass per book side. This runs on the websocket receive path
+    # for every 100ms depth message; the old per-step rescan (20 full-book
+    # Decimal scans) blocked the event loop long enough to delay keepalive
+    # pongs on busy books. Bucket each level by the shallowest liq step
+    # that contains it, cumulative-sum the buckets, and track the wall
+    # (largest single level within WALL_BAND_PCT of mid -- the cumulative
+    # bands destroy per-level detail, so walls must be captured here or
+    # never) in the same pass.
+    n_steps = len(liq_steps)
+    deepest = liq_steps[-1]
+    wall_band = WALL_BAND_PCT + tolerance
+    bid_buckets = [0.0] * n_steps
+    ask_buckets = [0.0] * n_steps
+    bid_wall_p = None
+    bid_wall_q = 0.0
     for price, q in order_book['bids'].items():
-        if price >= wall_lo and (bid_wall_q is None or q > bid_wall_q):
-            bid_wall_p, bid_wall_q = price, q
-    ask_wall_p = ask_wall_q = None
+        pct = (bid_f - float(price)) / bid_f * 100 - tolerance
+        if pct > deepest:
+            continue
+        q_f = float(q)
+        bid_buckets[bisect.bisect_left(liq_steps, pct)] += q_f
+        if pct <= wall_band and q_f > bid_wall_q:
+            bid_wall_p, bid_wall_q = float(price), q_f
+    ask_wall_p = None
+    ask_wall_q = 0.0
     for price, q in order_book['asks'].items():
-        if price <= wall_hi and (ask_wall_q is None or q > ask_wall_q):
-            ask_wall_p, ask_wall_q = price, q
+        pct = (float(price) - ask_f) / ask_f * 100 - tolerance
+        if pct > deepest:
+            continue
+        q_f = float(q)
+        ask_buckets[bisect.bisect_left(liq_steps, pct)] += q_f
+        if pct <= wall_band and q_f > ask_wall_q:
+            ask_wall_p, ask_wall_q = float(price), q_f
+
     out['wall'] = [
-        float(bid_wall_q) if bid_wall_q is not None else 0.0,
-        (mid - float(bid_wall_p)) / mid * 100 if bid_wall_p is not None else -1.0,
-        float(ask_wall_q) if ask_wall_q is not None else 0.0,
-        (float(ask_wall_p) - mid) / mid * 100 if ask_wall_p is not None else -1.0,
+        bid_wall_q if bid_wall_p is not None else 0.0,
+        (mid - bid_wall_p) / mid * 100 if bid_wall_p is not None else -1.0,
+        ask_wall_q if ask_wall_p is not None else 0.0,
+        (ask_wall_p - mid) / mid * 100 if ask_wall_p is not None else -1.0,
     ]
 
     out['liq_levels'] = []
-
-    for p in liq_steps:
-        threshold_bid = best_bid * (1 - Decimal((p + tolerance)/ 100))
-        threshold_ask = best_ask * (1 + Decimal((p + tolerance)/ 100))
-
-        liquidity_bid = sum(q for price, q in order_book['bids'].items() if price >= threshold_bid)
-        liquidity_ask = sum(q for price, q in order_book['asks'].items() if price <= threshold_ask)
-
-        out['liq_levels'].append([float(liquidity_bid), float(liquidity_ask)])
+    cum_bid = cum_ask = 0.0
+    for i in range(n_steps):
+        cum_bid += bid_buckets[i]
+        cum_ask += ask_buckets[i]
+        out['liq_levels'].append([cum_bid, cum_ask])
 
     update_queue.put(out)
     #print(out)
@@ -214,7 +238,7 @@ async def handle_orderbook_ws(update_queue, spot_snapshot_url, spot_prices_ws_ur
     disconnected_at = None
     while True:
         try:
-            async with websockets.connect(spot_prices_ws_url) as ws:
+            async with websockets.connect(spot_prices_ws_url, **ws_connect_kwargs) as ws:
                 if disconnected_at is not None:
                     log(f"Orderbook WebSocket reconnected {spot_prices_ws_url} after {time.time() - disconnected_at:.1f}s offline")
                     disconnected_at = None
@@ -290,7 +314,7 @@ async def trade_ws(spot_trade_ws_url, trade_buffer):
     disconnected_at = None
     while True:
         try:
-            async with websockets.connect(spot_trade_ws_url) as ws:
+            async with websockets.connect(spot_trade_ws_url, **ws_connect_kwargs) as ws:
                 if disconnected_at is not None:
                     log(f"Reconnected to trade stream {spot_trade_ws_url} after {time.time() - disconnected_at:.1f}s offline")
                     disconnected_at = None
@@ -443,7 +467,7 @@ async def subscribe_force_close(future_symbol, buffer):
     url = f'wss://fstream.binance.com/ws/{future_symbol.lower()}@forceOrder'
     while True:
         try:
-            async with websockets.connect(url) as ws:
+            async with websockets.connect(url, **ws_connect_kwargs) as ws:
                 log(f"Connected to force exit stream {url}")
                 async for message in ws:
                     data = json.loads(message)
@@ -467,7 +491,7 @@ async def subscribe_eth_mid(eth_symbol, buffer):
     url = f"wss://fstream.binance.com/ws/{eth_symbol.lower()}@bookTicker"
     while True:
         try:
-            async with websockets.connect(url) as ws:
+            async with websockets.connect(url, **ws_connect_kwargs) as ws:
                 log(f"Connected to eth bookTicker stream {url}")
                 async for message in ws:
                     data = json.loads(message)
@@ -484,7 +508,7 @@ async def subscribe_spread(future_symbol, buffer):
     url = f"wss://fstream.binance.com/ws/{future_symbol.lower()}@markPrice"
     while True:
         try:
-            async with websockets.connect(url) as ws:
+            async with websockets.connect(url, **ws_connect_kwargs) as ws:
                 log(f"Connected to mark price stream {url}")
                 async for message in ws:
                     data = json.loads(message)
@@ -928,7 +952,10 @@ def get_header():
 
 
 def get_stats(now, stats):
-    if len(stats["best_prices"][0]) == 0 or len(stats["trades"][0]) == 0:
+    # Only price/book data is required: a 15s window with zero trades is a
+    # real (quiet) bar on low-volume spot -- trade columns already define
+    # 0 / side=0 as "no trades", so the row stays schema-valid.
+    if len(stats["best_prices"][0]) == 0:
         return None
 
     line = [now.strftime("%Y-%m-%d %H:%M:%S"), str(int(now.timestamp()))]
@@ -1039,13 +1066,14 @@ def stats_calculator(update_queue):
             except queue_mod.Empty:
                 # No data from any subscriber for 1s -- normal only for very
                 # short blips; longer means all feeds are down (e.g. network
-                # outage). NOTE: bar emission below only runs when an update
-                # arrives, so nothing is written to the CSV while idle.
+                # outage). Fall through with update=None so the window flush
+                # below still runs on the timer: bar boundaries keep
+                # advancing and each missing bar is logged as it happens.
+                update = None
                 if idle_since is None:
                     idle_since = datetime.datetime.now()
-                continue
             now = datetime.datetime.now()
-            if idle_since is not None:
+            if update is not None and idle_since is not None:
                 log(f"update queue was empty for {(now - idle_since).total_seconds():.1f}s "
                     f"(all feeds silent -- no CSV rows written in that period)")
                 idle_since = None
@@ -1090,9 +1118,10 @@ def stats_calculator(update_queue):
                 reset_optional_stats(optional_stats)
                 last_print = round_to_interval(now, window_sec)
 
-            update_stats(spot_stats, update)
-            update_stats(future_stats, update)
-            update_optional_stats(optional_stats, update)
+            if update is not None:
+                update_stats(spot_stats, update)
+                update_stats(future_stats, update)
+                update_optional_stats(optional_stats, update)
 
         except KeyboardInterrupt:
             exit_received = True
