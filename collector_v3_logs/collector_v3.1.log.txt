@@ -1,0 +1,200 @@
+(trading..3.13.7) akoutsianas@akoutsianas-MS-7D22:~/binance_api/v3/binance_api$ python binance_live_orderbook_v3.py
+[2026-07-09 16:28:08] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11008434430617
+[2026-07-09 16:28:08] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16199754051
+[2026-07-09 16:28:10] Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+[2026-07-09 16:28:10] Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+[2026-07-09 16:28:10] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-09 16:28:10] Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+[2026-07-09 16:28:10] Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+[2026-07-09 16:28:10] update queue was empty for 0.8s (all feeds silent -- no CSV rows written in that period)
+[2026-07-09 16:28:10] Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+[2026-07-09 16:28:10] Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+[2026-07-09 16:28:10] Missed updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message U=11008434588273 > expected 11008434430618 (157655 updates lost), resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&
+limit=1000...
+[2026-07-09 16:28:10] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16199754696 > expected 16199754052 (644 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5
+000...
+[2026-07-09 16:28:10] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11008434722286
+[2026-07-09 16:28:10] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11008434653824 < expected 11008434722287
+[2026-07-09 16:28:10] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11008434691903 < expected 11008434722287
+[2026-07-09 16:28:10] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11008434718699 < expected 11008434722287
+[2026-07-09 16:28:10] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16199755012
+[2026-07-09 16:28:10] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16199754929 < expected 16199755013
+[2026-07-09 16:28:10] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16199755012 < expected 16199755013
+[2026-07-09 18:37:48] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-09 18:37:52] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 3.7s offline
+[2026-07-09 18:37:52] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11009474247238 != last applied u=11009470900346, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-09 18:37:52] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11009474280783
+[2026-07-09 18:37:52] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11009474264087 < expected 11009474280784
+[2026-07-09 18:37:52] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11009474270929 < expected 11009474280784
+[2026-07-09 18:37:52] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11009474276239 < expected 11009474280784
+[2026-07-09 21:53:23] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-09 21:53:26] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 3.7s offline
+[2026-07-09 21:53:27] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11010626465608 != last applied u=11010622867246, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-09 21:53:27] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11010626513137
+[2026-07-09 21:53:27] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11010626495150 < expected 11010626513138
+[2026-07-09 21:53:27] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11010626503403 < expected 11010626513138
+[2026-07-09 23:40:00] CSV bar at 2026-07-09 23:39:45 skipped: no data from spot (spot samples: prices=105 trades=0, future samples: prices=147 trades=33)
+[2026-07-10 00:33:30] CSV bar at 2026-07-10 00:33:15 skipped: no data from spot (spot samples: prices=94 trades=0, future samples: prices=147 trades=21)
+[2026-07-10 00:36:00] CSV bar at 2026-07-10 00:35:45 skipped: no data from spot (spot samples: prices=60 trades=0, future samples: prices=147 trades=23)
+[2026-07-10 00:37:15] CSV bar at 2026-07-10 00:37:00 skipped: no data from spot (spot samples: prices=102 trades=0, future samples: prices=147 trades=11)
+[2026-07-10 00:56:45] CSV bar at 2026-07-10 00:56:30 skipped: no data from spot (spot samples: prices=83 trades=0, future samples: prices=147 trades=20)
+[2026-07-10 00:57:45] CSV bar at 2026-07-10 00:57:30 skipped: no data from spot (spot samples: prices=84 trades=0, future samples: prices=147 trades=11)
+[2026-07-10 00:58:15] CSV bar at 2026-07-10 00:58:00 skipped: no data from spot (spot samples: prices=76 trades=0, future samples: prices=147 trades=23)
+[2026-07-10 01:12:45] CSV bar at 2026-07-10 01:12:30 skipped: no data from spot (spot samples: prices=95 trades=0, future samples: prices=147 trades=24)
+[2026-07-10 01:23:52] update queue was empty for 7.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:24:07] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:24:07] CSV bar at 2026-07-10 01:23:45 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:24:09] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 01:24:21] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:24:21] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 01:24:21] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 01:24:21] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 01:24:21] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 01:24:21] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 01:24:22] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 01:24:23] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:24:23] CSV bar at 2026-07-10 01:24:00 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:24:33] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:24:33] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:33] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:33] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:33] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:33] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:34] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:24:38] update queue was empty for 14.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:24:38] CSV bar at 2026-07-10 01:24:15 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:24:45] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:24:45] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:45] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:45] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:45] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:45] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:46] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:24:53] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:24:53] CSV bar at 2026-07-10 01:24:30 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:24:57] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:24:57] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:57] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:57] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:57] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:57] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:24:58] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:08] update queue was empty for 14.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:25:08] CSV bar at 2026-07-10 01:24:45 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:25:09] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:09] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:09] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:09] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:09] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:09] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:10] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:21] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:21] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:21] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:21] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:21] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:21] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:22] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:22] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:25:22] CSV bar at 2026-07-10 01:25:00 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:25:33] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:33] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:33] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:33] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:33] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:33] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:34] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:37] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:25:37] CSV bar at 2026-07-10 01:25:15 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:25:45] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:45] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:45] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:45] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:45] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:45] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:46] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... TimeoutError: timed out during opening handshake
+[2026-07-10 01:25:49] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 100.2s offline
+[2026-07-10 01:25:49] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11011611807877 != last applied u=11011602542653, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-10 01:25:50] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11011611831606
+[2026-07-10 01:25:50] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11011611819696 < expected 11011611831607
+[2026-07-10 01:25:50] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11011611824873 < expected 11011611831607
+[2026-07-10 01:25:50] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11011611829373 < expected 11011611831607
+[2026-07-10 01:25:50] update queue was empty for 11.3s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 01:25:50] CSV bar at 2026-07-10 01:25:30 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 01:25:50] Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+[2026-07-10 01:25:50] Reconnected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade after 88.7s offline
+[2026-07-10 01:25:50] Trade ID gap on wss://stream.binance.com:9443/ws/btcusdc@trade: expected 396757413, got 396757715 (302 trades missed)
+[2026-07-10 01:25:50] Orderbook WebSocket reconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms after 88.5s offline
+[2026-07-10 01:25:51] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16205589211 > expected 16205580910 (8301 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=
+5000...
+[2026-07-10 01:25:51] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16205589234
+[2026-07-10 01:25:51] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16205589217 < expected 16205589235
+[2026-07-10 01:25:51] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16205589229 < expected 16205589235
+[2026-07-10 01:25:51] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16205589234 < expected 16205589235
+[2026-07-10 01:25:57] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:57] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:25:57] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:26:00] CSV bar at 2026-07-10 01:25:45 skipped: no data from future (spot samples: prices=72 trades=7, future samples: prices=97 trades=0)
+[2026-07-10 01:26:00] Reconnected to trade stream wss://fstream.binance.com/ws/btcusdt@trade after 99.1s offline
+[2026-07-10 01:26:00] Trade ID gap on wss://fstream.binance.com/ws/btcusdt@trade: expected 7886546337, got 7886548141 (1804 trades missed)
+[2026-07-10 01:26:01] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-10 01:26:09] Mark price WebSocket error wss://fstream.binance.com/ws/btcusdt@markPrice: TimeoutError: timed out during opening handshake, reconnecting in 2s...
+[2026-07-10 01:26:14] Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+[2026-07-10 01:36:15] CSV bar at 2026-07-10 01:36:00 skipped: no data from spot (spot samples: prices=110 trades=0, future samples: prices=147 trades=26)
+[2026-07-10 01:36:45] CSV bar at 2026-07-10 01:36:30 skipped: no data from spot (spot samples: prices=78 trades=0, future samples: prices=148 trades=21)
+[2026-07-10 02:54:15] CSV bar at 2026-07-10 02:54:00 skipped: no data from spot (spot samples: prices=97 trades=0, future samples: prices=147 trades=14)
+[2026-07-10 04:00:52] update queue was empty for 9.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 04:01:07] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 04:01:07] CSV bar at 2026-07-10 04:00:45 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-10 04:01:13] update queue was empty for 4.7s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 04:01:15] CSV bar at 2026-07-10 04:01:00 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=5)
+[2026-07-10 04:01:20] Force exit WebSocket error wss://fstream.binance.com/ws/btcusdt@forceOrder: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 04:01:20] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-10 04:01:21] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 04:01:24] Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+[2026-07-10 04:01:24] Reconnected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade after 3.6s offline
+[2026-07-10 04:01:24] Orderbook WebSocket reconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms after 3.6s offline
+[2026-07-10 04:01:24] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16206697829 > expected 16206689745 (8084 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=
+5000...
+[2026-07-10 04:01:24] Trade ID gap on wss://stream.binance.com:9443/ws/btcusdc@trade: expected 396794419, got 396794671 (252 trades missed)
+[2026-07-10 04:01:25] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16206697959
+[2026-07-10 04:01:25] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16206697848 < expected 16206697960
+[2026-07-10 04:01:25] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16206697959 < expected 16206697960
+[2026-07-10 04:01:37] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 04:01:40] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 3.6s offline
+[2026-07-10 04:01:40] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11012442138344 != last applied u=11012437109463, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-10 04:01:41] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11012442192564
+[2026-07-10 04:01:41] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11012442168606 < expected 11012442192565
+[2026-07-10 04:01:41] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11012442178741 < expected 11012442192565
+[2026-07-10 04:01:41] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11012442189545 < expected 11012442192565
+[2026-07-10 05:56:43] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 05:56:46] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 3.7s offline
+[2026-07-10 05:56:46] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11013157925282 != last applied u=11013154878361, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-10 05:56:47] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11013157976930
+[2026-07-10 05:56:47] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11013157946633 < expected 11013157976931
+[2026-07-10 05:56:47] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11013157957532 < expected 11013157976931
+[2026-07-10 05:56:47] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11013157972075 < expected 11013157976931
+[2026-07-10 09:49:00] CSV bar at 2026-07-10 09:48:45 skipped: no data from spot (spot samples: prices=116 trades=0, future samples: prices=147 trades=45)
+[2026-07-10 10:01:45] update queue was empty for 0.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 10:01:47] update queue was empty for 1.3s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 10:26:19] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 10:26:23] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 3.7s offline
+[2026-07-10 10:26:23] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11014518699849 != last applied u=11014515169227, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-10 10:26:23] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11014518728854
+[2026-07-10 10:26:23] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11014518715548 < expected 11014518728855
+[2026-07-10 10:26:23] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11014518722250 < expected 11014518728855
+[2026-07-10 10:50:15] CSV bar at 2026-07-10 10:50:00 skipped: no data from spot (spot samples: prices=110 trades=0, future samples: prices=147 trades=52)
+[2026-07-10 14:31:46] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-10 14:31:49] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 2.9s offline
+[2026-07-10 14:31:49] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11015815031088 != last applied u=11015811216812, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1
+000...
+[2026-07-10 14:31:49] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11015815063038
+[2026-07-10 14:31:49] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11015815050018 < expected 11015815063039
+[2026-07-10 14:31:49] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11015815057168 < expected 11015815063039
+
