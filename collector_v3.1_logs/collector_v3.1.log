@@ -1,0 +1,85 @@
+(trading..3.13.7) akoutsianas@akoutsianas-MS-7D22:~/binance_api/v3/binance_api$ python binance_live_orderbook_v3.py
+[2026-07-10 17:04:24] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11016804112293
+[2026-07-10 17:04:24] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16214154028
+[2026-07-10 17:04:24] Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+[2026-07-10 17:04:24] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-10 17:04:24] Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+[2026-07-10 17:04:24] Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+[2026-07-10 17:04:24] Connected to mark price stream wss://fstream.binance.com/ws/btcusdt@markPrice
+[2026-07-10 17:04:24] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-10 17:04:25] Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+[2026-07-10 17:04:25] Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+[2026-07-10 17:04:25] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16214155364 > expected 16214154029 (1335 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+[2026-07-10 17:04:25] Missed updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message U=11016804423441 > expected 11016804112294 (311147 updates lost), resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-10 17:04:25] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16214155430
+[2026-07-10 17:04:25] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16214155408 < expected 16214155431
+[2026-07-10 17:04:25] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16214155430 < expected 16214155431
+[2026-07-10 17:04:25] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11016804476452
+[2026-07-10 17:04:25] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11016804456377 < expected 11016804476453
+[2026-07-10 17:04:25] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11016804468438 < expected 11016804476453
+[2026-07-12 14:12:02] update queue was empty for 0.4s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:12:08] update queue was empty for 4.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:12:22] update queue was empty for 13.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:12:30] CSV bar at 2026-07-12 14:12:15 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-12 14:12:38] update queue was empty for 14.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:12:45] CSV bar at 2026-07-12 14:12:30 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-12 14:12:53] update queue was empty for 14.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:13:00] CSV bar at 2026-07-12 14:12:45 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-12 14:13:07] update queue was empty for 13.8s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:13:15] CSV bar at 2026-07-12 14:13:00 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-12 14:13:16] update queue was empty for 7.4s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:13:21] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-12 14:13:21] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-12 14:13:21] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-12 14:13:22] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-12 14:13:23] update queue was empty for 5.3s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:13:24] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-12 14:13:24] update queue was empty for 0.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:13:24] Reconnected to trade stream wss://fstream.binance.com/ws/btcusdt@trade after 2.8s offline
+[2026-07-12 14:13:24] Reconnected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade after 2.8s offline
+[2026-07-12 14:13:25] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-12 14:13:25] Orderbook WebSocket reconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms after 2.8s offline
+[2026-07-12 14:13:25] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16231059927 > expected 16231053167 (6760 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+[2026-07-12 14:13:26] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16231059930
+[2026-07-12 14:13:26] Trade ID gap on wss://fstream.binance.com/ws/btcusdt@trade: expected 7891689269, got 7891690520 (1251 trades missed)
+[2026-07-12 14:13:26] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231059928 < expected 16231059931
+[2026-07-12 14:13:26] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231059930 < expected 16231059931
+[2026-07-12 14:13:26] Trade ID gap on wss://stream.binance.com:9443/ws/btcusdc@trade: expected 397459906, got 397460043 (137 trades missed)
+[2026-07-12 14:13:28] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 2.8s offline
+[2026-07-12 14:13:28] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11028800732997 != last applied u=11028794260727, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-12 14:13:28] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11028800747954
+[2026-07-12 14:13:28] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11028800741373 < expected 11028800747955
+[2026-07-12 14:13:28] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11028800744479 < expected 11028800747955
+[2026-07-12 14:17:10] update queue was empty for 1.4s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:15] update queue was empty for 4.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:19] update queue was empty for 2.4s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:23] update queue was empty for 2.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:25] update queue was empty for 1.8s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:30] CSV bar at 2026-07-12 14:17:15 skipped: no data from spot, future (spot samples: prices=0 trades=2, future samples: prices=0 trades=6)
+[2026-07-12 14:17:38] update queue was empty for 9.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:40] update queue was empty for 1.7s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:17:45] CSV bar at 2026-07-12 14:17:30 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=1)
+[2026-07-12 14:17:52] update queue was empty for 11.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:18:00] CSV bar at 2026-07-12 14:17:45 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-12 14:18:08] update queue was empty for 14.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:18:15] CSV bar at 2026-07-12 14:18:00 skipped: no data from spot, future (spot samples: prices=0 trades=0, future samples: prices=0 trades=0)
+[2026-07-12 14:18:17] update queue was empty for 8.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:18:18] Orderbook WebSocket disconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-12 14:18:21] Orderbook WebSocket reconnected wss://fstream.binance.com/ws/btcusdt@depth@100ms after 2.8s offline
+[2026-07-12 14:18:21] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11028820990107 != last applied u=11028816564801, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-12 14:18:21] update queue was empty for 0.8s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 14:18:21] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11028821014247
+[2026-07-12 14:18:21] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11028821004601 < expected 11028821014248
+[2026-07-12 14:18:21] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11028821010161 < expected 11028821014248
+[2026-07-12 14:18:30] CSV bar at 2026-07-12 14:18:15 skipped: no data from spot (spot samples: prices=0 trades=12, future samples: prices=83 trades=0)
+[2026-07-12 14:18:31] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-12 14:18:34] Reconnected to trade stream wss://fstream.binance.com/ws/btcusdt@trade after 2.8s offline
+[2026-07-12 14:18:34] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-12 14:18:34] Trade ID gap on wss://fstream.binance.com/ws/btcusdt@trade: expected 7891694468, got 7891694740 (272 trades missed)
+[2026-07-12 14:18:35] Orderbook WebSocket disconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms, retrying in 2s... ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received
+[2026-07-12 14:18:37] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-12 14:18:38] Orderbook WebSocket reconnected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms after 2.8s offline
+[2026-07-12 14:18:38] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16231085001 > expected 16231079734 (5267 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+[2026-07-12 14:18:39] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16231085004
+[2026-07-12 14:18:39] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231085004 < expected 16231085005
+
