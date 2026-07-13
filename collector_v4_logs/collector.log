@@ -1,0 +1,26 @@
+(trading..3.13.7) akoutsianas@akoutsianas-MS-7D22:~/binance_api/v3/binance_api$ python binance_live_orderbook_v4.py
+
+[2026-07-12 16:00:52] Bar interval: 15s (960 bars per file)
+[2026-07-12 16:00:52] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11029249977901
+[2026-07-12 16:00:53] Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+[2026-07-12 16:00:53] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-12 16:00:53] Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+[2026-07-12 16:00:53] Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+[2026-07-12 16:00:53] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 16:00:53] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16231601030
+[2026-07-12 16:00:53] Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+[2026-07-12 16:00:53] Missed updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message U=11029250054679 > expected 11029249977902 (76777 updates lost), resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-12 16:00:53] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11029250077365
+[2026-07-12 16:00:53] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11029250067080 < expected 11029250077366
+[2026-07-12 16:00:53] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11029250072451 < expected 11029250077366
+[2026-07-12 16:00:54] Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+[2026-07-12 16:00:54] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16231601073 > expected 16231601031 (42 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+[2026-07-12 16:00:54] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16231601091
+[2026-07-12 16:00:54] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231601086 < expected 16231601092
+[2026-07-12 16:00:54] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231601091 < expected 16231601092
+[2026-07-13 09:36:53] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11034641299420 != last applied u=11034641271940, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-13 09:36:54] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11034641422205
+[2026-07-13 09:36:54] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11034641382484 < expected 11034641422206
+[2026-07-13 09:36:54] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11034641407591 < expected 11034641422206
+[2026-07-13 09:36:56] Trade ID gap on wss://fstream.binance.com/ws/btcusdt@trade: expected 7893986762, got 7893986764 (2 trades missed)
+
