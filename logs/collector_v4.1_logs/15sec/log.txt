@@ -1,0 +1,90 @@
+(trading..3.13.7) akoutsianas@akoutsianas-MS-7D22:~/binance_api/v3/binance_api$ python binance_live_orderbook_v4.py
+[2026-07-12 16:00:52] Bar interval: 15s (960 bars per file)
+[2026-07-12 16:00:52] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11029249977901
+[2026-07-12 16:00:53] Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+[2026-07-12 16:00:53] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-12 16:00:53] Connected to trade stream wss://fstream.binance.com/ws/btcusdt@trade
+[2026-07-12 16:00:53] Connected to force exit stream wss://fstream.binance.com/ws/btcusdt@forceOrder
+[2026-07-12 16:00:53] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-12 16:00:53] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16231601030
+[2026-07-12 16:00:53] Orderbook WebSocket connected wss://fstream.binance.com/ws/btcusdt@depth@100ms
+[2026-07-12 16:00:53] Missed updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message U=11029250054679 > expected 11029249977902 (76777 updates lost), resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-12 16:00:53] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11029250077365
+[2026-07-12 16:00:53] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11029250067080 < expected 11029250077366
+[2026-07-12 16:00:53] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11029250072451 < expected 11029250077366
+[2026-07-12 16:00:54] Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+[2026-07-12 16:00:54] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16231601073 > expected 16231601031 (42 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+[2026-07-12 16:00:54] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16231601091
+[2026-07-12 16:00:54] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231601086 < expected 16231601092
+[2026-07-12 16:00:54] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16231601091 < expected 16231601092
+[2026-07-13 09:36:53] Missed future updates on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message pu=11034641299420 != last applied u=11034641271940, resyncing snapshot https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000...
+[2026-07-13 09:36:54] Snapshot loaded https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000 : 1000 bids, 1000 asks, lastUpdateId=11034641422205
+[2026-07-13 09:36:54] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11034641382484 < expected 11034641422206
+[2026-07-13 09:36:54] Ignoring past update on wss://fstream.binance.com/ws/btcusdt@depth@100ms: message u=11034641407591 < expected 11034641422206
+[2026-07-13 09:36:56] Trade ID gap on wss://fstream.binance.com/ws/btcusdt@trade: expected 7893986762, got 7893986764 (2 trades missed)
+[2026-07-14 15:06:27] Long/short ratio attempt 1 failed on https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1: ClientConnectorDNSError: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 2s...
+[2026-07-14 15:06:27] Premium index attempt 1 failed on https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT: ClientConnectorDNSError: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 2s...
+[2026-07-14 15:06:27] Open interest attempt 1 failed on https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT: ClientConnectorDNSError: Cannot connect to host fapi.binance.com:443 ssl:default [Temporary failure in name resolution], retrying in 2s...
+[2026-07-14 15:30:41] Trade WebSocket error wss://fstream.binance.com/ws/btcusdt@trade: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-14 15:30:44] Reconnected to trade stream wss://fstream.binance.com/ws/btcusdt@trade after 3.1s offline
+[2026-07-14 15:30:44] Trade ID gap on wss://fstream.binance.com/ws/btcusdt@trade: expected 7897610464, got 7897645599 (35135 trades missed)
+[2026-07-14 15:31:29] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-14 15:31:33] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-14 15:36:19] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-14 15:36:23] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-14 15:46:23] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-14 15:46:27] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-14 15:47:31] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-14 15:47:34] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-14 15:48:15] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-14 15:48:18] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-14 16:04:10] Connected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade
+[2026-07-14 16:04:11] Trade ID gap on wss://stream.binance.com:9443/ws/btcusdc@trade: expected 398220800, got 398220880 (80 trades missed)
+[2026-07-14 16:13:15] update queue was empty for 2.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:16] update queue was empty for 0.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:17] update queue was empty for 0.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:18] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:22] update queue was empty for 2.6s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:26] update queue was empty for 1.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:30] CSV bar at 2026-07-14 16:13:15 skipped: no data from spot, future (spot samples: prices=0 trades=8, future samples: prices=0 trades=0)
+[2026-07-14 16:13:30] update queue was empty for 3.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:33] update queue was empty for 0.2s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:37] update queue was empty for 3.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:41] update queue was empty for 2.1s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:13:45] CSV bar at 2026-07-14 16:13:30 skipped: no data from spot (spot samples: prices=0 trades=4, future samples: prices=17 trades=5)
+[2026-07-14 16:14:00] CSV bar at 2026-07-14 16:13:45 skipped: no data from spot (spot samples: prices=0 trades=0, future samples: prices=81 trades=26)
+[2026-07-14 16:14:01] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-14 16:14:18] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-14 16:14:20] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionResetError: , reconnecting in 2s...
+[2026-07-14 16:14:23] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-14 16:14:40] Trade WebSocket error wss://stream.binance.com:9443/ws/btcusdc@trade: ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received, reconnecting in 2s...
+[2026-07-14 16:14:43] Reconnected to trade stream wss://stream.binance.com:9443/ws/btcusdc@trade after 3.0s offline
+[2026-07-14 16:14:43] Trade ID gap on wss://stream.binance.com:9443/ws/btcusdc@trade: expected 398224935, got 398225393 (458 trades missed)
+[2026-07-14 16:49:09] Orderbook WebSocket connected wss://stream.binance.com:9443/ws/btcusdc@depth@100ms
+[2026-07-14 16:49:09] Missed updates on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message U=16259288269 > expected 16259285358 (2911 updates lost), resyncing snapshot https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000...
+[2026-07-14 16:49:10] Snapshot loaded https://api.binance.com/api/v3/depth?symbol=BTCUSDC&limit=5000 : 5000 bids, 5000 asks, lastUpdateId=16259288330
+[2026-07-14 16:49:10] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16259288308 < expected 16259288331
+[2026-07-14 16:49:10] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16259288315 < expected 16259288331
+[2026-07-14 16:49:10] Ignoring past update on wss://stream.binance.com:9443/ws/btcusdc@depth@100ms: message u=16259288330 < expected 16259288331
+[2026-07-15 12:38:53] update queue was empty for 1.5s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 12:38:54] update queue was empty for 0.4s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 12:39:16] update queue was empty for 3.6s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 12:44:43] update queue was empty for 0.8s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 13:00:17] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 13:00:20] update queue was empty for 1.9s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 13:01:26] update queue was empty for 0.0s (all feeds silent -- no CSV rows written in that period)
+[2026-07-15 15:53:34] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 15:53:37] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-15 16:00:32] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 16:00:35] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-15 16:00:43] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 16:00:46] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-15 16:02:30] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 16:02:33] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-15 16:02:50] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 16:02:53] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-15 16:03:13] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 16:03:16] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+[2026-07-15 16:04:22] ETH bookTicker WebSocket error wss://fstream.binance.com/ws/ethusdt@bookTicker: ConnectionClosedError: no close frame received or sent, reconnecting in 2s...
+[2026-07-15 16:04:25] Connected to eth bookTicker stream wss://fstream.binance.com/ws/ethusdt@bookTicker
+
