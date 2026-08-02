@@ -128,6 +128,41 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 - Ruled out as levers: bigger models, exit rules, entry latency, label
   redefinition (first-touch), and the EMA overlay.
 
+## run.010 — pre-registered 2026-08-02 (5-second bars: resolution experiment)
+
+Notebook `runs/btc_lstm.run.010.ipynb` = run.009 with **one variable changed**:
+bar width 15s→5s (the v4.1 collector's `out5.w5.*` stream, accumulating since
+2026-07-13, never trained on). Every time constant is converted to keep
+wall-clock meaning identical: HORIZONS [2,3,4,5,6,8]→[6,9,12,15,18,24]
+(30s–2min), SEQ_LEN 64→192 (16min), VOL_WINDOW 240→720 (1h), H_SEL 6→18
+(90s, θ=20bp), ENTRY_WAIT 2→6 (30s), small bar-count rollers ×3, θ per
+wall-clock horizon unchanged. Rationale: the signal lives at 30–90s (IC halves
+every ~30s) — at 15s the whole phenomenon is 2–6 bars wide; 5s triples
+resolution exactly there. "New input" = the only lever class that has ever
+moved this project (finding #2).
+
+**Design experiment, not an economic gate** (~13 test days, same window as
+run.009 → clean comparison, same power caveat). Pre-registered read-out vs
+run.009's identical-window numbers:
+- **Promote w5** (45-day run switches to 5s) iff daily-IC t at the 30s head
+  (h6) AND 90s head (h18) beat run.009's +3.87/+2.10, AND primary-cell
+  lift/hit don't degrade, AND trigger fold-share is not worse (run.009:
+  148/152 in one fold; informational fold-share print added under the gate).
+- **Kill w5** iff 30s/90s daily-IC doesn't materially improve → 45-day run
+  stays on w15, zero further cost.
+- Sanity anchor: 90s/20bp first-touch base rates must ≈ run.009's
+  (lup 0.45% / ldn 0.43%); far off ⇒ tar or cadence handling broken.
+- The printed gate is wall-clock-identical to run.009's; a PASS at ~13 test
+  days is a design signal, NOT trading evidence. Economic verdict stays
+  reserved for the ≥45-day run (~Aug 28).
+
+New loader safeguard now in the notebook: files are filtered on `.w5.` in the
+filename — a mixed w15+w5 tar can no longer silently interleave cadences.
+Build the upload tar from the w5 files only
+(`tar czf 20day_btc_data_w5.tar.gz out5.w5.*.csv*`). Smoke-tested 2026-08-02
+on local w5 files against a mixed w5+w15 dir: filter loads w5 only, 99%+ of
+bar gaps == 5s, schema v5 100%, 29/29 v3 features, labels/targets build.
+
 ## Operational notes
 
 - Build the tar with `tar cJf btc_data.tar.xz out*.csv.gz`; verify schema-3/4
