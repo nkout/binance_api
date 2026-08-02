@@ -124,6 +124,15 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
      on the same window to isolate the feature contribution. **Per run.010,
      run it on 5-second bars (w5), not 15s** — 5s sharpened the 30s/90s daily-IC
      past run.009 and cut trigger fold-concentration, at no measured cost.
+     The 45-day run now carries **two** questions, not one:
+     - **(gate/regime)** does the edge survive across 27+ test days / 4
+       week-long folds, or was it two lucky regimes?
+     - **(fill-timing)** re-run **Cell 10D** on the 45-day set — its ~0.50 AUC
+       on run.010 hit the same 13-day power wall as the gate, so the 45-day
+       result is the clean tiebreaker: still ~0.50 → collect **sub-second
+       order-flow** (the only justified reason to go finer than 5s); lifts to
+       ≥~0.58 → the fill-timing signal was buried in noise, build a **maker/skip
+       router** on the current features, no new data needed.
   2. A genuinely different **execution signal** for maker entry (one that predicts
      a pause-before-continuation so the limit fills ahead of the move) — but the
      h2-reg-timing hybrid already degenerated to ~98% taker, so this likely needs
@@ -206,6 +215,31 @@ fold-concentration. But the economics remain gated by fill mechanics, which
 finer bars do not touch (consistent with run.009's finding that adverse
 selection is execution, not signal/label). The tradable verdict stays reserved
 for the ≥45-day run (~Aug 28) — which should now run on **w5**.
+
+### Fill-split diagnostic (Cell 10D, added + run 2026-08-02)
+
+Direct attack on the adverse-selection mechanism: split the primary-config
+triggers into filled/unfilled and favourable/adverse, then ask whether any
+observable feature at the trigger bar predicts the split **out-of-fold**
+(day-grouped CV logistic on all features). Read on run.010's own data:
+
+| side | triggers | fill% | favourable(all) | FILLED OOF AUC | FAVOURABLE OOF AUC |
+|------|----------|-------|-----------------|----------------|--------------------|
+| up18 | 1,434 | 78.3% | 15.6% | 0.495 | (n/a — see below) |
+| dn18 | 1,213 | 75.7% | 17.2% | 0.489 | 0.518 |
+
+**~0.50 everywhere = chance.** Neither "will it fill" nor "will the fill be
+profitable" is predictable from the current features (incl. all v3
+microstructure). The tempting single-feature AUCs (`book_imbal_deep` 0.615,
+`cancel_imbal_near` 0.638, `vol_ratio_1h_24h` 0.634) are **in-sample** and do
+not survive out-of-fold — overfit, not signal. Two caveats: (1) the FAVOURABLE
+target hit its own 13-day power wall — day-folds with zero rare positives made
+a fold-averaged AUC undefined (up18 returned `nan`); the cell was patched to
+**pooled out-of-fold predictions** (`cross_val_predict` → one AUC) so it
+resolves on re-run. (2) At ~12 test days this diagnostic is under-powered by the
+same logic as the gate. Per the pre-registered read-out, ~0.50 points to **data
+resolution (sub-second order-flow)** as the remaining lever, not cleverer use of
+the current features — but hold that trigger for the 45-day re-run (below).
 
 ## Operational notes
 
