@@ -1,4 +1,4 @@
-# BTC Orderbook LSTM — Cross-Run Analysis (run.001 → run.009)
+# BTC Orderbook LSTM — Cross-Run Analysis (run.001 → run.010)
 
 *Synthesized 2026-08-02 from project memory. Numbers are as reported by each
 run's executed notebook; where a result was later shown non-robust (e.g. the
@@ -56,6 +56,7 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 | 008.v4data | First real schema-5 run (7 d, 29/29 v3 feats) | **Gate FAILED** — no boost, but can't measure one (7 d ≪ 45 d, low-vol week, no ablation). "Wait for volume," not "v3 doesn't help" |
 | 008.v4data_try_02 | Same, 20.8 d / 13 test days (3× data) | **Gate FAILED** — but regression IC now +ve & daily-significant to h8 (t +2.1..+3.9): first real schema-5 signal. Killed by adverse selection + **2-of-4-fold regime concentration** |
 | 009 | Triple-barrier **first-touch** labels | **NULL** — gate byte-identical to try_02; labels flip <1% (only at h8). Adverse selection is fill-mechanics, not a label artifact |
+| 010 | **5-second bars** (run.009 at 5s, wall-clock identical) | **Design PASS / gate FAIL** — 30s daily-IC t +4.07>3.87, 90s +3.35>2.10, fold-concentration far better (42%/68% vs 97%) ⇒ **promote w5**; gate still fails via same adverse selection, economics unmoved by finer bars |
 
 ## Cross-cutting findings
 
@@ -120,7 +121,9 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
      gate its designed statistical power *and* the regime coverage the 2/4-fold
      concentration demands. **This is the single highest-value next action.**
      Rerun run.008/try_02 unchanged; ideally add a v3-features-off ablation cell
-     on the same window to isolate the feature contribution.
+     on the same window to isolate the feature contribution. **Per run.010,
+     run it on 5-second bars (w5), not 15s** — 5s sharpened the 30s/90s daily-IC
+     past run.009 and cut trigger fold-concentration, at no measured cost.
   2. A genuinely different **execution signal** for maker entry (one that predicts
      a pause-before-continuation so the limit fills ahead of the move) — but the
      h2-reg-timing hybrid already degenerated to ~98% taker, so this likely needs
@@ -128,7 +131,7 @@ the project. Schema-5 data (out5) first flowed end-to-end on 2026-07-19.
 - Ruled out as levers: bigger models, exit rules, entry latency, label
   redefinition (first-touch), and the EMA overlay.
 
-## run.010 — pre-registered 2026-08-02 (5-second bars: resolution experiment)
+## run.010 — executed 2026-08-02 (5-second bars: resolution experiment)
 
 Notebook `runs/btc_lstm.run.010.ipynb` = run.009 with **one variable changed**:
 bar width 15s→5s (the v4.1 collector's `out5.w5.*` stream, accumulating since
@@ -162,6 +165,47 @@ Build the upload tar from the w5 files only
 (`tar czf 20day_btc_data_w5.tar.gz out5.w5.*.csv*`). Smoke-tested 2026-08-02
 on local w5 files against a mixed w5+w15 dir: filter loads w5 only, 99%+ of
 bar gaps == 5s, schema v5 100%, 29/29 v3 features, labels/targets build.
+
+### Results (executed on Colab, analyzed 2026-08-02)
+
+**Data / cadence sanity — clean.** 119 w5-only files, 342,720 rows → 302,152
+valid samples, 19.9 days (2026-07-14 → 08-02), schema-5 100%, cadence clean
+(37 tiny breaks, largest 0.1h). Sanity anchor **holds**: first-touch base
+rates lup_18 0.48% / ldn_18 0.45% ≈ run.009's 0.45% / 0.43% → cadence handling
+correct, numbers directly comparable.
+
+**Design hypothesis — PASSED cleanly** (the point of the run). Every
+pre-registered promote condition is met:
+
+| metric | run.009 (15s) | run.010 (5s) | verdict |
+|--------|---------------|--------------|---------|
+| daily-IC t, 30s head (h6) | +3.87 | **+4.07** | beats ✅ |
+| daily-IC t, 90s head (h18) | +2.10 | **+3.35** | beats ✅ |
+| all-horizon daily-IC | — | t = +3.21 … +4.07, **all 12 days, all 6 horizons** | uniformly significant |
+| pooled IC (h6 / h18) | lower | +0.0746 / +0.0383 | ~doubled |
+| trigger fold-concentration | up6 = **97%** in one fold | up18 max **42%**, dn18 **68%** | far better (both <97%, up18 <60% ideal) |
+
+⇒ **Promote w5: the 45-day run should switch to 5-second bars.** Residual
+caveat — the IC is still somewhat regime-carried (folds 1 & 3 hold it,
+IC_h6 ≈ +0.157 each; folds 0 & 2 weak, +0.010 / +0.049), but the trigger
+spread is dramatically healthier than run.009's single-fold clustering.
+
+**GATE — FAILED as expected** (pre-declared design run, ~13 test days). Same
+adverse-selection wall as run.008/009, unmoved by finer resolution:
+- up18 maker sim **−8.38 bps** CI [−9.39, −7.84]; dn18 **−7.66 bps**
+  CI [−8.72, −4.65] — CIs entirely below 0.
+- Fill fine (78% / 76%) but **hit_f ≪ hit_m** (up 3.9% filled vs 16.1% missed;
+  dn 6.2% vs 30.5%) — the limit fills only when the move fails.
+- Per-fold sim 0/4 positive both sides; the 30s-timed hybrid is still negative
+  (up −9.51 / dn −8.00), so timing does not rescue the fills. All taker sims
+  −8 … −10 bps too.
+
+**Verdict:** the resolution hypothesis is **confirmed** — 5s sharpens the
+signal exactly where it lives, past run.009 on both target heads with far less
+fold-concentration. But the economics remain gated by fill mechanics, which
+finer bars do not touch (consistent with run.009's finding that adverse
+selection is execution, not signal/label). The tradable verdict stays reserved
+for the ≥45-day run (~Aug 28) — which should now run on **w5**.
 
 ## Operational notes
 
