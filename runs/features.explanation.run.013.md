@@ -344,3 +344,157 @@ st_time_imb_ms, st_first_trade_off, st_last_trade_off,
 fd_qty_flow_z, sd_qty_flow_z, fd_qty_close_mom, sd_qty_close_mom,
 ft_qty_traded_roll, st_qty_traded_roll
 ```
+---
+
+## 6. What to predict and how to use these features for trading
+
+### 6.1 The core principle
+
+These features describe **where liquidity sits and how it is changing at each
+price level** — not the direction of price. The tradeable object is therefore
+not "price goes up/down" but **"this specific level holds or breaks"**. A
+resting level is either
+
+- **real** (will absorb flow and hold), or
+- **spoofed / transient** (will be pulled or traded through).
+
+Everything below reduces to predicting which of these a level is, and
+positioning accordingly.
+
+### 6.2 Prediction targets
+
+**T1 — Wall survival (hold vs. break).** The most natural target. For each
+resting level `(t, side, price)` with `qty_close > 0` and `level_rank ≤ R`
+(only near the top of the book), predict over the next `h` bins whether the
+level:
+
+- (a) **holds** — price reverses away and the resting quantity survives, or
+- (b) **breaks** — the level is traded through (aggressor flow consumes it).
+
+Label: `y = 1` if `close_price` crosses the level within `h` bins (a
+price-conditioned version of the notebook's `lup_*/ldn_*` first-touch labels).
+
+Feature → signal mapping (all from the cell, causal up to `t`):
+
+| signal | features |
+|--------|----------|
+| draining wall | `pull_to_add_ratio > 1`, `qty_removed` rising, `n_pulls` spiking |
+| being eaten | `ft_qty_sold`/`ft_qty_bought` hitting the level while `qty_close` falls |
+| contested | `side_flip = 1` |
+| strong wall | high `qty_close`, low `level_rank`, `qty_added ≥ qty_removed` |
+
+**T2 — Spoof vs. real (a filter, not a direct trade).** Predict whether a
+level with high `qty_flow` but `ft_qty_traded ≈ 0` and rapid
+`n_adds` + `n_pulls` is genuine or transient. Use it to **veto** T1 signals:
+a wall that is large but flickers without ever being traded is a fake wall.
+
+**T3 — Maker fill + favourable outcome (the project's missing lever).** Post a
+maker limit at `p`; predict whether it will (a) **fill** and (b) reach TP
+before SL. Runs 008–011 could not answer this with bars (pooled OOF AUC
+≈ 0.51–0.52, causal router ≈ 0 bps/trig). The `sd_*`/`fd_*` timing and
+`ft_*`/`st_*` trade-timing features now test fill-timing directly.
+
+**T4 — Level-conditional touch (execution timing).** Probability that price
+*touches* a specific level within `h` bins — feeds stop/entry placement.
+
+### 6.3 Trading strategies
+
+1. **Maker (earn fee + mean reversion).** Post at levels predicted to **hold**:
+   strong absorption (`qty_added` keeping pace with `qty_removed` plus trades),
+   low adverse selection (`ft_taker_buy_share` not one-sided), low `level_rank`.
+   Profit = maker fee + the reversal away from the level.
+
+2. **Taker momentum (break).** When a wall is predicted to be **eaten** (spoof
+   or draining + trades chewing it), enter with the break at that level.
+
+3. **Execution router.** Given a directional signal, route to the specific
+   price level with the best predicted fill-probability-per-unit-adverse-
+   selection — a price-aware version of the run.010a/011 router.
+
+4. **Support/resistance map.** Rank levels by predicted hold-probability and
+   place entries, stops and take-profits only at **resilient** levels.
+
+### 6.4 Cost, causality and evaluation
+
+- **Fees dominate.** Maker 2bp, taker 5bp per side: round trips cost ~4bp
+  (maker-make), ~7bp (taker-make) or ~10bp (taker-taker). Every signal must
+  clear this net; the bar-level work returned ~0 bps after fees.
+- **Causality.** `dist_to_top_bps`, `dist_to_mid_bps`, `level_rank` are computed
+  at **bin end**. For a live signal you must use the book state at signal time,
+  not bin end — shift them by one bin (or recompute mid-rank on the fly).
+- **No peeking.** Thresholds (`R`), posting offsets, and horizon `h` must be
+  chosen on validation data only, then evaluated walk-forward with a
+  day-clustered bootstrap CI (the notebook's existing methodology).
+
+---
+
+## 7. Further suggestions
+
+### 7.1 Stationarity — re-index by distance from mid (the biggest structural fix)
+
+The panel is keyed by **absolute price**, but BTC drifts: a given level exists
+for minutes then price moves away and never returns. A model trained on
+absolute-price rows cannot generalise across time. Instead, aggregate into a
+**fixed depth grid** around mid:
+
+```
+ticks relative to mid:  -20, -19, ..., -1, 0, +1, ..., +20
+```
+
+You already have the ingredients — `fd_dist_to_top_bps`,
+`fd_dist_to_mid_bps`, `fd_level_rank` — use them as the **index**, not as
+columns. Per bin, per stream, build a `(time × depth_level)` matrix (the
+standard L2 orderbook image). Do this separately for `fd_*` and `sd_*` to keep
+the two books distinct. This turns the ephemeral per-price panel into a
+stationary feature space that a model can actually learn from.
+
+### 7.2 Additional features worth adding
+
+- **Per-level order-flow imbalance**:
+  $$(qty\_bought - qty\_sold)/(qty\_bought + qty\_sold + \epsilon)$$
+  — signed aggressor pressure at the level (`ft_*`/`st_*`).
+- **Wall persistence / dwell**: how long the level has rested (now − `t_first`),
+  and a rolling "seconds alive". Long-lived walls carry more information.
+- **Depth slope / concentration**: cumulative `qty_close` within ±N ticks of
+  mid — a one-number book-shape feature per bin.
+- **Wall stiffness**: `qty_close` of the level relative to the sum of adjacent
+  levels — isolated level vs part of a cluster.
+- **Cross-stream basis at the level**: `(sd_best − fd_best)` per bin — the
+  spot-future basis, itself a classic tradeable signal.
+- **Level age → outcome**: whether a newly added level gets traded vs pulled.
+
+### 7.3 Modeling approaches suited to this panel
+
+The panel is `(time, side, price)` and sparse; three framings:
+
+- **2D "orderbook image"** (time × depth grid after 7.1): feed a **2D CNN /
+  ConvLSTM / small transformer** — the standard LOB-prediction setup.
+- **Per-price sequence model**: for a chosen level, the `(bin, features)`
+  sequence → wall-survival. Light and interpretable (your current LSTM
+  direction).
+- **Gradient boosting on the flat features** for a first signal check — fast,
+  and tells you which features matter before committing to a deep model.
+
+### 7.4 Additional tradeable targets
+
+- **Spoof detection as its own binary target**: the level never trades within
+  `h` (predict "this wall is fake" → do not respect it).
+- **Lead-lag**: do `sd_*`/`st_*` (spot) lead `fd_*`/`ft_*` (future)? A lead-lag
+  regression across streams is a classic microstructure edge.
+- **Price impact**: the realized move given book state + aggressor flow.
+- **Queue position / fill-time**: time-to-fill for a maker limit given the
+  depth ahead of you.
+
+### 7.5 Validation notes
+
+- **Data volume**: the current panel is one hour. Accumulate several days
+  before modelling; downsample or subsample for a first pass.
+- **Leakage**: compute every target strictly **after** the feature bin.
+- **Cost**: always report net bps after fees with a day-clustered bootstrap CI.
+
+### 7.6 Concrete next steps (in order)
+
+1. Re-index the panel to **distance-from-mid** per stream (7.1).
+2. Add the imbalance / persistence / slope features (7.2).
+3. Build the wall-survival label (T1) + report out-of-fold AUC as the first
+   empirical read.
