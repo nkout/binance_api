@@ -1,0 +1,161 @@
+{
+ "tiers": {
+  "VIP0": [
+   2.0,
+   5.0
+  ],
+  "VIP0+BNB": [
+   1.8,
+   4.5
+  ],
+  "VIP4 (illustrative)": [
+   1.0,
+   3.0
+  ],
+  "VIP9 (illustrative)": [
+   0.0,
+   1.7
+  ]
+ },
+ "A": {
+  "model c* (one-way, bp)": 0.21360811577299274,
+  "oracle next-bar c*": 1.15021248295567
+ },
+ "B": [
+  {
+   "signal": "1d top 1% delay 0s",
+   "n": 387,
+   "gross": 11.138817444636224,
+   "gross_ci": [
+    8.90430110682797,
+    13.81002230671838
+   ],
+   "breakeven_rt": 11.138817444636224,
+   "net VIP0 taker-taker": 1.1388174446362243,
+   "CI lo > fee VIP0": false,
+   "net VIP0+BNB taker-taker": 2.1388174446362243,
+   "CI lo > fee VIP0+BNB": false,
+   "net VIP4 (illustrative) taker-taker": 5.138817444636224,
+   "CI lo > fee VIP4 (illustrative)": true,
+   "net VIP9 (illustrative) taker-taker": 7.738817444636224,
+   "CI lo > fee VIP9 (illustrative)": true
+  },
+  {
+   "signal": "1d top 1% delay 15s",
+   "n": 368,
+   "gross": 3.402466359345809,
+   "gross_ci": [
+    0.8193290428160168,
+    6.244766616663179
+   ],
+   "breakeven_rt": 3.402466359345809,
+   "net VIP0 taker-taker": -6.597533640654191,
+   "CI lo > fee VIP0": false,
+   "net VIP0+BNB taker-taker": -5.597533640654191,
+   "CI lo > fee VIP0+BNB": false,
+   "net VIP4 (illustrative) taker-taker": -2.597533640654191,
+   "CI lo > fee VIP4 (illustrative)": false,
+   "net VIP9 (illustrative) taker-taker": 0.002466359345809188,
+   "CI lo > fee VIP9 (illustrative)": false
+  },
+  {
+   "signal": "1d top 2% delay 0s",
+   "n": 610,
+   "gross": 9.073226178278688,
+   "gross_ci": [
+    7.067462414074629,
+    11.283249439722585
+   ],
+   "breakeven_rt": 9.073226178278688,
+   "net VIP0 taker-taker": -0.9267738217213122,
+   "CI lo > fee VIP0": false,
+   "net VIP0+BNB taker-taker": 0.07322617827868783,
+   "CI lo > fee VIP0+BNB": false,
+   "net VIP4 (illustrative) taker-taker": 3.073226178278688,
+   "CI lo > fee VIP4 (illustrative)": true,
+   "net VIP9 (illustrative) taker-taker": 5.6732261782786875,
+   "CI lo > fee VIP9 (illustrative)": true
+  },
+  {
+   "signal": "1d top 2% delay 15s",
+   "n": 587,
+   "gross": 2.5539138248060183,
+   "gross_ci": [
+    0.7658252116424562,
+    4.456190303503577
+   ],
+   "breakeven_rt": 2.5539138248060183,
+   "net VIP0 taker-taker": -7.446086175193981,
+   "CI lo > fee VIP0": false,
+   "net VIP0+BNB taker-taker": -6.446086175193981,
+   "CI lo > fee VIP0+BNB": false,
+   "net VIP4 (illustrative) taker-taker": -3.4460861751939817,
+   "CI lo > fee VIP4 (illustrative)": false,
+   "net VIP9 (illustrative) taker-taker": -0.8460861751939817,
+   "CI lo > fee VIP9 (illustrative)": false
+  },
+  {
+   "signal": "1d top 5% delay 0s",
+   "n": 1625,
+   "gross": 4.455449030949519,
+   "gross_ci": [
+    3.3372274170382785,
+    5.6598068819889695
+   ],
+   "breakeven_rt": 4.455449030949519,
+   "net VIP0 taker-taker": -5.544550969050481,
+   "CI lo > fee VIP0": false,
+   "net VIP0+BNB taker-taker": -4.544550969050481,
+   "CI lo > fee VIP0+BNB": false,
+   "net VIP4 (illustrative) taker-taker": -1.5445509690504808,
+   "CI lo > fee VIP4 (illustrative)": false,
+   "net VIP9 (illustrative) taker-taker": 1.0554490309495193,
+   "CI lo > fee VIP9 (illustrative)": false
+  },
+  {
+   "signal": "1d top 5% delay 15s",
+   "n": 1545,
+   "gross": 0.8061047896598149,
+   "gross_ci": [
+    -0.146675946919304,
+    1.771108700278027
+   ],
+   "breakeven_rt": 0.8061047896598149,
+   "net VIP0 taker-taker": -9.193895210340186,
+   "CI lo > fee VIP0": false,
+   "net VIP0+BNB taker-taker": -8.193895210340186,
+   "CI lo > fee VIP0+BNB": false,
+   "net VIP4 (illustrative) taker-taker": -5.193895210340185,
+   "CI lo > fee VIP4 (illustrative)": false,
+   "net VIP9 (illustrative) taker-taker": -2.593895210340185,
+   "CI lo > fee VIP9 (illustrative)": false
+  }
+ ],
+ "C": [
+  [
+   "5 s up15 @0.01 % best gross cell (run009d.offline \u00a72)",
+   8.48,
+   "[+1.40, +11.04], collapses to +1.31 without fold 3"
+  ],
+  [
+   "90 s up18 @0.1 % maker, filled (run009d.analysis)",
+   0.0,
+   "\u2248 0 after adverse selection"
+  ],
+  [
+   "4 h mean reversion, 7 yr (v1_4h_feasibility \u00a79)",
+   -1.39,
+   "[\u22127.72, +4.89]"
+  ],
+  [
+   "breakout primary (breakout_probe \u00a73)",
+   3.7,
+   "net CI at 10 bp [\u221226.7, +15.0]"
+  ],
+  [
+   "1d primary, all triggers (v1_stage2_probe \u00a72)",
+   0.64,
+   "12,863 trades"
+  ]
+ ]
+}
