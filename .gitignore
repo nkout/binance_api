@@ -1,0 +1,12 @@
+# Large data artifacts — regenerable or re-downloadable, never in git
+data/
+*.npz
+*.pkl
+*.tar
+
+# Tooling / editor noise
+.omo/
+.idea/
+__pycache__/
+*.pyc
+.venv/

@@ -1,12 +1,15 @@
-# Horizon economics — why nothing could have been profitable at 90 s, and what is left to try
+# Horizon economics — why nothing was profitable at any horizon tried
+
+*Terminal document for the `btc_lstm` programme. Start at §8 (closing summary).*
 
 *Written 2026-09-22 after reading the full `runs/` doc set: `no_profit_root_cause.md`,
 `SESSION_NOTES_2026-09-21.md`, `ALL_RUNS_ANALYSIS.md`, `economics_and_metrics.md`,
 `run009a/009b/009d/009e/009f` analyses, `run009d.offline.md`, `btc_lstm.run.012.md`,
 `features.explanation.run.013.md`, plus the `btc_lstm.run.009f.ipynb` config and the
 `run009f_scores.npz` schema. §1–§5 contain no new computation — every number there is either
-quoted from those docs or derived from them by stated arithmetic. §6 is a new measurement,
-executed 2026-09-22 on CPU from `run009f_scores.npz`; reproduction code in the appendix.*
+quoted from those docs or derived from them by stated arithmetic. §6 and §7 are new
+measurements, executed 2026-09-22 on CPU from `run009f_scores.npz`; reproduction code for
+§6 is in the appendix. §7 ends in a built, tested notebook: `btc_lstm.probe.gbm.ipynb`.*
 
 **TLDR:** the existing root cause ("the heads found volatility, not direction") is correct
 but stops one step short. The binding constraint is not the model, the labels, the
@@ -23,6 +26,17 @@ turnover reduction does **not** help (the information decays faster than the tur
 so `c*` *drops* under smoothing), and **even a perfect next-bar direction oracle only reaches
 `c* = 1.15 bp` — below the maker fee.** At a 5 s cadence, perfect foresight does not pay
 Binance's fees.
+
+**§7's probe has now been run and is FALSIFIED (§7.8).** No long-horizon directional signal
+exists in the 76 features: pooled IC `+0.005 / −0.009 / +0.001 / −0.007` at 15 min and 1 h,
+daily-IC t never reaching 3, direction heads early-stopping at 0–14 rounds. Its criterion-B
+"passes" were **drift** — on the trigger sets `P(up)` is 0.347 (15 min) and **0.873** (1 h),
+and always-long beats the model in **7 of 8 cells**. Full write-up: `gbm_probe.analysis.md`.
+
+**The 4 h branch is also closed (`v1_4h_feasibility.analysis.md` §9).** A genuine, stationary
+rank signal there (`range_pos_24h` IC −0.34 in both train and test) yields **−1.39 bp gross
+over 1,625 trades / 7 years** — win rate 54.9 %, median +11.47 bp, mean negative. **§8 is the
+closing summary; read it first.**
 
 ---
 
@@ -407,17 +421,270 @@ does not re-discover it and mistake it for a result.
   horizon. §4.3 (vol-scaled labels) and §4.4 (net-P&L objective) remain worth doing *only* in
   service of that branch, not on the 90 s ladder.
 
-## 7. Bottom line for the project log
+## 7. Long-horizon design — what (a) configurable horizon and (b) a direction model are worth
 
-> The signal is real, roughly **52–53 % directional**, and the horizon it was traded at
-> requires **99–174 %**.
+*Measured 2026-09-22 from `run009f_scores.npz`, prompted by two proposals: make the
+horizon configurable, and split the model into a big-move detector plus a dedicated
+direction model trained on big moves only. Both are right. The measurements say they
+are worth far more **together** than separately.*
 
-That is not a failure of the research — the diagnostic chain from 009a to 009f is careful,
-self-correcting and better documented than most production work. It is a failure of the
-horizon-and-fee choice made back at run.007, which every subsequent run inherited as a fixed
-constant and no run ever re-opened.
+### 7.1 The existing model's direction does NOT transfer
 
----
+Spearman IC of the existing `pred` against the raw forward return at each horizon:
+
+| forward horizon | 30 s | 90 s | 5 min | 15 min | 30 min | 1 h | 3 h |
+|---|---|---|---|---|---|---|---|
+| IC | +0.054 | +0.046 | +0.034 | +0.025 | +0.013 | +0.006 | −0.012 |
+| daily t | +6.7 | +4.1 | +1.6 | +0.2 | −0.4 | −0.9 | −1.5 |
+
+Significance is gone by 5 minutes and the sign inverts by 3 h. **Stage 2 must be
+trained fresh on a long-horizon target** — the existing regression head cannot be
+reused, and neither can the assumption that its features are the right ones.
+
+### 7.2 But the volatility detector DOES transfer — the enabling result
+
+Top-0.1 % per fold by `P(lup_18) + P(ldn_18)` (the existing stage-1 detector, used
+far outside its 90 s training horizon):
+
+| horizon | 30 s | 90 s | 5 min | 15 min | 30 min | 1 h | 3 h | 6 h |
+|---|---|---|---|---|---|---|---|---|
+| \|move\| lift | 4.84× | 4.63× | 4.33× | **3.59×** | 2.72× | **2.27×** | 1.26× | 0.97× |
+| E\|move\| on triggers | 10.7 bp | 18.6 bp | 31.7 bp | **44.5 bp** | 47.7 bp | **55.8 bp** | 54.9 bp | 61.3 bp |
+
+Stage 1 keeps useful concentration out to ~1 h **with no retraining at all**. This is
+the single most valuable measurement in this document after §6: it means the
+expensive half of the two-stage design already exists and already works at the
+horizons where the economics are survivable.
+
+### 7.3 The consequence — required accuracy collapses
+
+`p = (1 + F/E|move|)/2` on the stage-1 trigger set of §7.2:
+
+| horizon | maker 4 bp | mixed 7 bp | stop 9 bp | taker 10 bp |
+|---|---|---|---|---|
+| 30 s | 0.687 | 0.827 | 0.920 | 0.967 |
+| **90 s** *(where 13 runs were spent)* | 0.607 | 0.688 | 0.742 | **0.769** |
+| 5 min | 0.563 | 0.610 | 0.642 | 0.658 |
+| **15 min** | 0.545 | 0.579 | 0.601 | **0.612** |
+| **1 h** | **0.536** | 0.563 | 0.581 | **0.590** |
+
+Current directional accuracy is ~0.52–0.55 everywhere. **At 90 s the gap is ~24
+points. At 1 h it is ~6 points (taker) or ~1–3 points (maker).** Same features, same
+detector — the horizon does all the work.
+
+> **CORRECTION (2026-09-22, after the probe).** This table benchmarks against a 0.50 coin.
+> On volatility-selected bars at long horizons that is wrong: the drift baseline measured on
+> the probe's own trigger sets was **0.347 at 15 min and 0.873 at 1 h**. The 1 h "maker
+> requirement 0.536" is beaten by simply always being long. Any long-horizon criterion must
+> read `required = max((1 + F/E|move|)/2, P(up) on the same trigger set)`. The required-fee
+> arithmetic is unchanged; the *benchmark it is compared against* is not 0.50. See
+> `gbm_probe.analysis.md` §3 and §7.
+
+A third, independent benefit: adverse selection is a roughly fixed ~5 bp, so it falls
+from **27 %** of the move at 90 s to **11 %** at 15 min and **9 %** at 1 h. The
+mechanism that killed maker entry (`hit_f 4.4 % ≪ hit_m 18.0 %`) stops dominating.
+
+### 7.4 What is NOT evidence — the per-horizon signed edge is a random walk
+
+Using the existing `pred` sign on the §7.2 trigger sets:
+
+| horizon | 90 s | 5 min | 15 min | 30 min | 1 h | 3 h |
+|---|---|---|---|---|---|---|
+| signed bp | +1.85 | **+5.01** | −5.25 | −7.22 | +3.41 | −4.91 |
+| day-clustered 95 % CI | [−0.73, +5.06] | [−1.44, +11.68] | [−16.87, +8.22] | [−20.24, +9.66] | [−13.19, +20.52] | [−20.86, +12.58] |
+| folds > 0 | 4/4 | 3/4 | 1/4 | 1/4 | 3/4 | 1/4 |
+
+Every CI includes zero and the signs alternate. **The +5.01 bp at 5 min is not a
+finding** — it is the same shape as fold 3, the run.010a 0.610 router AUC, and the
+§6.6 deadband cell. Recorded here so it is not rediscovered as a result.
+
+### 7.5 Design consequences for the two-stage run
+
+1. **Stage-2 label = sign of the vol-normalised return at the horizon**, not a
+   first-touch barrier. First-touch reintroduces magnitude into the direction target,
+   which is precisely the coupling that made stage 1 and stage 2 the same detector.
+2. **`THETA_BY_H` must scale with horizon and volatility.** A fixed 20 bp barrier
+   fires on ~74 % of bars at 1 h. Use `θ = k·σ_h`. Configurable horizon makes the
+   vol-scaled label of §4.3 mandatory rather than optional.
+3. **The fold purge must widen from `MAX_H` (24) to `max(LONG_H)`.** A 1 h label
+   started just before a fold boundary resolves 720 bars later — inside the next
+   split. With run.009f's purge that is direct label leakage into test.
+4. **Use GBM for stage 2, not an LSTM.** "Eventful" is 1.7 % at h18 → ~6.6 k
+   sequences in fold 0; a model that already overfits at epoch 1 on 800 k samples
+   will memorise that instantly. Longer horizons also *fix* the small-sample problem:
+   with a vol-scaled θ the event rate is a choice, so 1 h at 5 % gives 20–40 k.
+5. **Pre-register on required accuracy, not AUC** (§4.2, and `run014.plan.md` §9).
+
+### 7.6 The feature prune was measured on the wrong objective
+
+`DROP_HARMFUL` was derived from the **h18 up-head AP drop** — a magnitude metric at a
+90 s horizon. What it dropped:
+
+`basis_z_4h`, `ma_gap_1h`, `ma_gap_4h`, `minute_sin`, `minute_cos`, `dow_sin`,
+`vol_norm`, `flow_net_widex_z`, `buy_accel`, `wall_imbal`, `wall_qty_norm`,
+`sell_tail_ratio`, `largest_trade_rel`
+
+Spot–futures basis, two trend gaps and the whole seasonality block — the slow,
+directional, carry-flavoured features, discarded for being poor at 90-second
+magnitude. That is the wrong objective and the wrong horizon for long-horizon
+direction. Re-judge with a direction metric before trusting the prune.
+
+**Caveat:** run.011 found regime/time proxies (`vol_ratio_1h_24h`, `lsr_z`,
+`minute_cos`, `dow_sin`) carried a 0.613 AUC that died under walk-forward. These
+features have a history of looking good and not being causal, so they must be
+validated per fold, walk-forward. At 1 h they are at least the right *class*, which
+they never were at 90 s.
+
+### 7.7 The probe — `runs/btc_lstm.probe.gbm.ipynb`
+
+Before building any two-stage notebook, one cheap question: **is there a
+long-horizon directional signal in the existing features at all?** The probe trains
+GBMs at 15 min and 1 h on the run.009f feature pipeline (cells 1–5 byte-identical),
+walk-forward on the same folds with the widened purge, with three heads per fold:
+`mag` (stage 1), `dir_all`, and `dir_evt` (direction trained only on eventful bars —
+the explicit test of the "train on big moves only" hypothesis).
+
+Pre-registered: **A** daily-IC t ≥ 3 and IC > 0 in ≥ 3/4 folds · **B** accuracy on
+the stage-1 top-0.1 % ≥ the maker-route requirement (0.545 @ 15 min, 0.536 @ 1 h) ·
+**C** net at 7 bp > 0 with a day-clustered CI excluding 0. Falsification: A fails at
+both horizons → the existing bar features carry no usable long-horizon direction, so
+do not build the two-stage notebook. **A-pass / B-fail is the run.009d–f pattern and
+must not be read as success.** Build notes: `runs/gbm_probe.notes.md`.
+
+### 7.8 Probe result — FALSIFIED (executed 2026-09-22)
+
+Ran clean on Colab (14/14 cells, GPU). **Criterion A failed in all four arms:**
+
+| | 15 min `dir_all` | 15 min `dir_evt` | 1 h `dir_all` | 1 h `dir_evt` |
+|---|---|---|---|---|
+| pooled IC | +0.0050 | −0.0088 | +0.0014 | −0.0073 |
+| daily-IC t | +1.94 | −2.44 | +1.70 | +1.01 |
+| folds > 0 | 4/4 | 1/4 | 2/4 | 2/4 |
+
+For scale the LSTM's h6 IC is +0.0602. The direction heads early-stop at **0–14 boosting
+rounds** (the `mag` head trains to 30–122) — the GBM reaches the same epoch-1 collapse the
+LSTM does, from a different model family.
+
+**Criterion B printed three PASSes and all three are drift.** The probe compared accuracy to
+the fee-breakeven number only; it never inherited the blind benchmark from
+`run009d.offline.md` §8. Computed afterwards from the saved npz, on the probe's own trigger
+sets: `P(up)` = **0.347** (15 min) and **0.873** (1 h), always-long gross −10.10 and
+**+20.62** bp, and the model **loses to always-long in 7 of 8 cells** — by 12.3 bp in the
+worst. The 1 h requirement was 0.541; being long scored 0.873.
+
+Harmless at 90 s (blind benchmark there is +0.04 bp), fatal at 1 h. **Lengthening the horizon
+introduces a drift confound that did not exist at 90 s** — the single most transferable
+lesson from this probe.
+
+**What stands from §7.1–§7.3:** the required-accuracy relaxation is real and the volatility
+detector really does transfer. What the probe tested was the remaining premise — that some
+directional signal exists at those horizons to exploit the relaxation — and that premise is
+**false for this feature set**. The GBM `mag` head also came in *worse* than the existing
+LSTM detector (2.12× vs 3.59× at 15 min), so stage 1 needs no retraining either.
+
+Full analysis, including why the sign-permutation null reads 100 % without rescuing anything:
+`gbm_probe.analysis.md`. Control implemented for future runs in
+`btc_lstm.probe.gbm2.ipynb` cell G5b; the executed v1 is kept unmodified as the record.
+
+## 8. Closing summary — where the project ended
+
+*Written 2026-09-22 after the last open branch closed. This section is the current
+statement of the project; §1–§7 are the working record that produced it.*
+
+### 8.1 The verdict in one line
+
+> **The signal was always real and never tradeable.** Every horizon the project tried has a
+> measured directional signal and a measured cost floor above it, and the gap is arithmetic,
+> not a modelling failure.
+
+### 8.2 Three branches, three measurements, all closed
+
+| horizon | what exists | what it takes | gap |
+|---|---|---|---|
+| **5 s – 90 s** | IC +0.06…+0.11, daily-t +7.6; ~52–53 % directional | `c*` ≥ 2.0 bp (maker) | **`c* = 0.214 bp` — 9.4×.** A *perfect* next-bar oracle reaches only 1.15 bp, below the maker fee (§6.4) |
+| **15 min – 1 h** | required accuracy relaxes to 0.54–0.61; the volatility detector still transfers (2.3–3.6× lift) | any directional signal at all | **IC +0.005 / −0.009 / +0.001 / −0.007**, daily-t never reaching 3; direction heads early-stop at 0–14 rounds (§7.8) |
+| **4 h** | a genuine, stationary rank signal — `range_pos_24h` IC **−0.34** in both train and test, daily-t −18, 24/29 features keep sign OOS | mean P&L > 4 bp | **−1.39 bp gross over 1,625 trades / 7 years**, sign-perm percentile 33.2 (`v1_4h_feasibility.analysis.md` §9) |
+
+Each row was closed by a different failure mode, and that is the substance of the finding:
+
+1. **90 s — the fee is larger than the move.** At `E|move| = 4.03 bp` against a 10 bp taker
+   round trip, breakeven needs 174 % accuracy. Selection lifts `E|move|` to 13.2 bp and the
+   requirement to 88 % (taker) / 65 % (full-maker, which a stop makes unreachable — the honest
+   figure is ~80 %). Nothing closes a gap that starts above 100 %.
+2. **15 min – 1 h — the requirement relaxes but the signal vanishes.** Microstructure
+   information decays in seconds; nothing in the 76 bar features replaces it at those horizons.
+3. **4 h — the signal exists and the payoff is left-skewed.** Win rate 54.9 %, **median trade
+   +11.47 bp, mean −1.39 bp**. Many modest winners, a thin tail of large losers. The two worst
+   folds are 2021-10→2022-06 and 2023-01→2023-08, i.e. the drawdown regimes. This is the same
+   "win capped, loss uncapped" asymmetry `economics_and_metrics.md` §7.5 found at 90 s,
+   reappearing at a 4-hour horizon with an unrelated signal — so it is a property of the trade
+   structure, not of any one horizon.
+
+### 8.3 What is left, and why it does not change the verdict
+
+**`run.013`'s price-level event panel** is the only untested input class. It should be run to
+close the question, but not as a path to P&L: eliminating adverse selection *completely* moves
+the 90 s requirement from 0.80 to 0.65 against an achieved 0.53 (§4.6), and §6.4 shows the 5 s
+cadence fails even with perfect foresight. Frame it as "is fill timing predictable at all".
+
+Beyond that, the configurations that remain arithmetically open are **daily horizons** (required
+accuracy 0.54) and **near-zero fees** (≈0.002 % maker, which does not exist). Daily horizons
+need years of data and a different signal class — and are now cheap to test, since the 7-year
+kline set is downloaded.
+
+### 8.4 What survives
+
+- **The volatility forecaster is real and beat every falsification attempt.** Eventful-bar AUC
+  **0.879**; |move| lift **4.63× at 90 s decaying to 2.27× at 1 h** with no retraining;
+  `P(either barrier touched)` 2.30 % → 43.7 %. It is not a strategy, but it is a correct,
+  durable model of something, and it is the right input for position sizing, stop placement and
+  quote withdrawal if a base strategy ever exists.
+- **The data.** 740,451 5-min klines (7 years, 100.00 % coverage); a year of v1 collector data
+  with open interest, long/short ratio and the full depth ladder for **331 days** (plus funding
+  and liquidations for **216**) — OI, L/S and liquidation history are not re-downloadable at any
+  price; and the 60-day v5 set with all 76 features.
+- **The method.** The diagnostic chain from 009a through §9 is more rigorous than most
+  production research, and it is self-correcting: several published numbers in this repo were
+  retracted by their own authors after re-derivation.
+
+### 8.5 What actually caught errors
+
+Ranked by what changed a conclusion, not by how much machinery it required:
+
+1. **Out-of-sample sample length.** The 4 h strategy passed *every* structural control on one
+   year — walk-forward, one-position accounting, balanced legs, 6/8 months, day-clustered CI —
+   and was still an artifact. Only 8× the sample separated it from zero.
+2. **Non-overlapping trade accounting.** Caught a **9.4×** inflation (+13.78 → +1.46 bp) that no
+   other control detected. Per-signal averaging over overlapping windows is not a P&L.
+3. **The blind / drift benchmark.** Caught three false criterion-B "passes" in the GBM probe,
+   where `P(up)` on the trigger set was 0.873 and the fee requirement was 0.541.
+4. **The sign-permutation null.** The one statistic that never lied: 90.3 on the favourable
+   year (already below its 97.5 bar) and 33.2 over 7 years.
+
+Day-clustered CIs, month-by-month stability and fold counts caught nothing the above missed.
+
+**Two lessons about process**, both earned the hard way in this repo: a green test suite is not
+evidence unless it executes the artifact (three defect classes shipped past green suites), and
+**tuning cost 7 bp per trade** — per-fold config selection underperformed the untuned rule in 3
+of 4 folds (`v1_4h_feasibility.analysis.md` §8.2).
+
+### 8.6 If this were started again
+
+Run the economic feasibility check **before** writing a notebook:
+
+```
+required accuracy = max( (1 + F/E|move|)/2 ,  P(up) on the same trigger set )
+```
+
+with `F` the realistic round trip for the intended exit structure (7–9 bp with a stop, not 4).
+**If it exceeds ~0.65, do not build the run.** That single line, applied at run.007, would have
+redirected the project four years of wall-clock earlier — and applied at each later branch, it
+would have killed runs 009e, 009f, most of the 008–011 execution grids, and the criterion-B
+half of the GBM probe before any of them were written.
+
+The rest of the discipline here — pre-registration, one variable per run, adversarial review,
+re-derivation from saved artifacts — was already good. What was missing was never statistical.
+It was an economic gate.
 
 ## Appendix — how to check §1
 
