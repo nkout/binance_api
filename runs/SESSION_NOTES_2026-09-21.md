@@ -286,6 +286,9 @@ What remains, in order of value:
 | `run009d.offline.md` | Part 2 §8–10: drift control, volatility-selection mechanism, CI correction |
 | `run009d.analysis.md` | 009d results with the corrective UPDATE block |
 | `run009e_scores.npz` | 009e predictions with the artifact patch — makes the above offline-analysable |
+| `run009f_scores.npz` | 009f predictions + artifact patch — all `S` values in `run009f.analysis.md` re-derived from this |
+| `run009f_selective.png` | 009f four-panel plot |
+| `/tmp/opencode/009f_failed_backup.ipynb` | the revision that failed to compile, with its `SyntaxError` output — evidence for the `ast.parse` vs `compile()` hole |
 
 ### Harness (`/tmp/opencode`, ephemeral per the run.012 convention)
 
@@ -296,3 +299,109 @@ What remains, in order of value:
 `close_map.npz` (3.6 MB) is the reusable piece: an epoch→close map rebuilt from
 the 3.9 GB tar, which makes **any** `run009*_scores.npz` fully analysable offline
 without the tar. Rebuild with `build_close_map.py` (117 s).
+
+---
+
+## Session log (chronological, 2026-09-21)
+
+What was asked, what was done, what broke, and where the evidence is.
+
+### 1. Analyse run.009d
+Read `btc_lstm.run.009d.ipynb` + `run009d.notes.md`, extracted execution outputs, consulted Oracle
+for an adversarial methodological review, wrote **`run009d.analysis.md`**. Headline: the prune moved
+the signal a little and the economics not at all; gate F/P/F/F; 11/12 seed-folds select epoch 1.
+
+### 2. Offline diagnostics — built a harness from scratch
+No artifacts were local. User downloaded `data/60days_data.tar` (3.9 GB) + `run009d_scores.npz`.
+Built `/tmp/opencode/`: `build_close_map.py` (tar → epoch→close, 117 s), `diag_lib.py` (verbatim ports
+of the notebook's `sim_exit` / `rolling_triggers` / `boot_ci_mean` / `first_touch`), plus `run_diag2-7.py`.
+**Validated by exact reproduction** of the notebook's published h18 table and per-seed val APs.
+Produced **`run009d.offline.md`**: val base rates (up to 3.9× test — explains the AP gap), fee-free
+gross surface (nothing clears 10 bp), per-fold decomposition, leave-one-fold-out (fold 3 carries
+everything).
+
+### 3. Drift control + direction-vs-volatility
+Added Part 2 §8–10: blind benchmark, day-matched random-entry null, market-neutral spread `S`,
+per-fold `S`. **My own "fold 3 was a trend" hypothesis was refuted** (fold-3 drift +0.04 bp), and
+replaced with the correct mechanism: **volatility selection with a weak directional tilt** — every head
+raises its *opposite* first-touch label by 6.8–39.8× base, trigger |move| is 3.3–5.3× the average.
+Retracted the trend claim in both `run009d.offline.md` and `run009d.analysis.md`.
+
+### 4. run.009e — corrected selection objective
+Built `btc_lstm.run.009e.ipynb` = run.009d + `EARLY_STOP` `'ap'` → `'dir'`, plus the 009f-style
+drift diagnostics and the artifact-saving patch. **Three runtime bugs shipped past a green suite**
+and were found only by *executing the notebook's own functions*:
+
+| # | bug | why the test missed it |
+|---|---|---|
+| 1 | `directional_edge` given 2-D `vp`, indexed as 1-D → `IndexError` on epoch 1 | the acceptance test **re-implemented** the metric instead of executing it |
+| 2 | `fold_triggers` called with 3 args in 10 places → `TypeError` | same |
+| 3 | day-matched null drawn on the up head's days while evaluating dn | same |
+
+Also: 10 cells carried run.009d's executed outputs (including a stale `EARLY_STOP=ap` print), and a
+stale `run.009d:` identity label. All fixed; the test was rewritten to extract and execute the
+notebook's real code and to include a static call-arity check.
+
+### 5. run.009e executed → gate failed, estimator under-powered
+User ran it. **Gate A–F all fail**; every metric regressed vs 009d. Diagnosis: `DIR_RATE=0.001` on
+54 k–115 k val bars = **54–115 triggers**, and DE is a difference of **single-digit label counts**
+(val DE quantises to multiples of 1/55; `+0.0000` at two epochs where zero labels fired). Selection
+chased noise — val DE ≈ +0.10…+0.18 → test DE +0.0195. **This was a defect in my brief, not the
+implementation.** Wrote `run009e.analysis.md`.
+
+### 6. run.009f — spread estimator + CI fix
+Built `btc_lstm.run.009f.ipynb` = 009e + `EARLY_STOP` `'spread'` (continuous val market-neutral
+spread), `DIR_RATE=0.02`, `MIN_TRIG_VAL=500`, `np.isfinite` guard, `best_state` fallback, and
+`boot_ci_spread` (union-of-days bootstrap) replacing the defective interval.
+
+Two more defect classes found during verification:
+
+- **Stale run identity** — cells 6 and 11 printed `run.009e` in a 009f notebook, and the test had
+  been **weakened with a blanket skip of cell 11**, so it passed. Fixed; narrow lineage-only
+  allowances plus explicit identity assertions.
+- **`boot_ci_spread` sign error** — called with a **pre-negated dn leg** (`-fw[ed]`), carried over
+  from the old `concat(fw[eu], −fw[ed])` form. The function already subtracts the two leg means, so
+  the interval was for `mean_up + mean_dn` and **did not contain the point estimate**. This was a
+  defect in my brief again (the negation is correct inside a concatenated mean, wrong inside a
+  difference of means). Fixed at 3 call sites + builder; the suite now asserts the CI **brackets the
+  estimate** and that the dn leg is not negated. **My published correction numbers were computed
+  with the same bug** — `[−0.77, +12.32]` / "1.77×" were wrong; correct are `[−1.80, +10.88]` / 1.71×.
+
+### 7. run.009f first execution FAILED to compile
+`SyntaxError: 'break' outside loop` in cell 9 — the `best_state is None` fallback was inserted at
+**indent 4** in front of `hist.append`, which closed the `for epoch` loop and left the loop's `break`
+orphaned. Cells 1–8 ran clean; nothing past cell 9 executed.
+
+**Root cause of every false pass:** the test's "compile all cells" check used **`ast.parse`**, which
+only builds the AST and does *not* validate `break`/`continue`/`return` placement — that happens at
+compile time. Demonstrated on the exact failing revision: `ast.parse` PASSES, `compile()` FAILS.
+Fixed the notebook, the builder, and the test (now `compile()` + a cell-9 regression check).
+The failed notebook is preserved at **`/tmp/opencode/009f_failed_backup.ipynb`**.
+
+### 8. run.009f re-run → gate failed, `S` significantly negative
+All 17 cells clean. **Gate A–F all fail, both sides.** `S = −3.79 bp, CI [−7.22, −0.42]` — significantly
+**negative**, and independently so in folds 0 and 1. Wrote **`run009f.analysis.md`**; updated this doc.
+Re-derived every `S` value and CI from `run009f_scores.npz` using the notebook's own functions —
+all match the printed output to the digit.
+
+### 9. run.013 assessed
+`btc_lstm.run.013.ipynb` is **unexecuted**; a price-level event panel (one row per `(time, side, price)`,
+93 columns). Right idea, not ready: stale config, inherits run.012's artifact-passing gate and the
+defective CI, and its own doc flags a bin-end causality bug (§6.4) and absolute-price
+non-stationarity as "the biggest structural fix" (§7.1). Its T3 target (maker fill + favourable
+outcome) is the one result that would change the verdict.
+
+### Process lessons from this session
+
+1. **A green suite is not evidence unless it exercises the artifact.** Three separate defect classes
+   shipped past green suites because the test measured a proxy: a re-implemented metric, a blanket
+   skip, and `ast.parse` instead of `compile()`. Each fix made the test measure the real thing.
+2. **Two of the seven defects were in the briefs, not the implementations** — the under-powered
+   `DIR_RATE` and the pre-negated dn leg. Specifying a statistic precisely includes specifying how
+   its arguments compose.
+3. **Verify delegated work by executing it**, not by reading the report. The most valuable checks
+   (IndexError, TypeError, `break` outside loop) all required *running* the notebook's own code.
+4. **My own published numbers were wrong twice** and had to be retracted (trend exposure; the CI
+   width). Both were caught by re-deriving from saved data rather than trusting the earlier write-up.
+5. **Keeping the artifact patch** (forward closes, raw preds, val labels, `theta_by_h`) in every new
+   run paid for itself: it made 009e and 009f fully re-analysable offline without the 3.9 GB tar.
