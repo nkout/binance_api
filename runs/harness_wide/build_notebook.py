@@ -45,7 +45,7 @@ Outputs: `MyDrive/btc_wide_probe/`.
 """
 
 C_SETUP = r"""# Cell 1 — environment
-import os, sys, json, time, subprocess, warnings
+import os, sys, json, time, subprocess, warnings, gc, psutil
 IN_COLAB = 'google.colab' in sys.modules
 if IN_COLAB:
     subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'xgboost>=2.0'], check=False)
@@ -62,7 +62,14 @@ def _has_gpu():
 
 DEVICE = 'cuda' if _has_gpu() else 'cpu'
 TDEV = 'cuda' if torch.cuda.is_available() else 'cpu'
+def mem(tag=''):
+    # host RSS / total and GPU allocated -- printed at every heavy step so an OOM restart is locatable
+    vm = psutil.virtual_memory(); rss = psutil.Process().memory_info().rss / 1e9
+    g = f' | gpu {torch.cuda.memory_allocated() / 1e9:.1f} GB' if torch.cuda.is_available() else ''
+    print(f'  [mem {tag}] rss {rss:.1f} GB, host used {vm.used / 1e9:.1f} / {vm.total / 1e9:.1f} GB{g}', flush=True)
+
 print(f'xgboost {xgb.__version__} on {DEVICE} | torch {torch.__version__} on {TDEV} | colab {IN_COLAB}')
+mem('start')
 if IN_COLAB:
     from google.colab import drive
     drive.mount('/content/drive')
@@ -134,6 +141,7 @@ for L in LABELS:
           f'P(up | touched) {LAB[L]["up"][LAB[L]["touched"]].mean():.3f}')
 print(f'grid {G:,} bars ({G / bday:.1f} d) | stage-1 {trig.mean() * 100:.2f} % | rows needed {len(ROWS):,} | '
       f'{len(FEATS60)} engineered features | {time.time() - t0:.0f}s')
+gc.collect(); mem('after grid + features')
 """
 
 C_WIDE = r"""# Cell 4 — wide inputs onto the same grid (fp16), flat [bar, 1-min mean, 5-min mean] for the rows needed
@@ -146,16 +154,18 @@ def rolling_at(col, rows, w):
     return np.where(n > 0, s / np.maximum(n, 1), np.nan)
 
 t0 = time.time()
-tab = pq.read_table(WIDE_DATA, filters=[('ts', '<=', int(ts5[-1]))] if LIMIT_DAYS > 0 else None)
-WCOLS = [c for c in tab.column_names if c != 'ts']; K = len(WCOLS)
-tsw = tab.column('ts').to_numpy().astype(np.int64)
+pf = pq.ParquetFile(WIDE_DATA)                              # read 64 columns at a time: never the whole table
+WCOLS = [c for c in pf.schema_arrow.names if c != 'ts']; K = len(WCOLS)
+tsw = pf.read(columns=['ts']).column('ts').to_numpy().astype(np.int64)
 slot = np.round((tsw - ts5[0]) / BAR).astype(np.int64)
 okw = (slot >= 0) & (slot < G)
 okw[okw] &= np.abs(tsw[okw] - ts5[slot[okw]]) <= 1
 GW = np.full((G, K), np.nan, np.float16)
-for j, c in enumerate(WCOLS):
-    GW[slot[okw], j] = np.clip(tab.column(c).to_numpy()[okw], -6e4, 6e4).astype(np.float16)
-del tab
+for j0 in range(0, K, 64):
+    part = pf.read(columns=WCOLS[j0:j0 + 64])
+    for j, c in enumerate(part.column_names):
+        GW[slot[okw], j0 + j] = np.clip(part.column(c).to_numpy()[okw], -6e4, 6e4).astype(np.float16)
+    del part
 present = np.zeros(G, bool); present[slot[okw]] = True
 print(f'wide: {K} columns | grid rows present {present.mean() * 100:.1f} % | needed rows present '
       f'{present[ROWS].mean() * 100:.1f} % | GW {GW.nbytes / 1e9:.2f} GB | {time.time() - t0:.0f}s')
@@ -170,9 +180,15 @@ for j in range(K):
     for i, w in enumerate(MEAN_WINS):
         XW[:, K * (i + 1) + j] = rolling_at(col, ROWS, w)
 print(f'flat wide input {XW.shape} ({XW.nbytes / 1e9:.2f} GB) | {time.time() - t0:.0f}s')
+gc.collect(); mem('after wide inputs')
 """
 
 C_MODELS = r"""# Cell 5 — models. Preprocessing statistics come from the training rows of each fit only.
+PREP_MAX = 20000                                             # rows used to fit clip / z statistics
+
+def prep_sample(rows, seed=0):
+    return rows if len(rows) <= PREP_MAX else np.sort(np.random.default_rng(seed).choice(rows, PREP_MAX, replace=False))
+
 class Prep:
     def __init__(self, X):
         X = np.where(np.isfinite(X), X, np.nan)
@@ -251,28 +267,41 @@ def _rows(r):
     assert (i >= 0).all(), 'a fit row is missing from ROWS'
     return i
 
+def to_dev(prep, rows, bs=16384):
+    # normalise XW rows chunk by chunk straight into a device tensor (no full-size host copies)
+    ii = _rows(rows); out = torch.empty((len(ii), XW.shape[1]), dtype=torch.float32, device=TDEV)
+    for i in range(0, len(ii), bs):
+        out[i:i + bs] = torch.as_tensor(prep(XW[ii[i:i + bs]]), device=TDEV)
+    return out
+
 def fit_mlp(tr, ytr, va, yva, te, seed):
     torch.manual_seed(seed)
-    prep = Prep(XW[_rows(tr)])
-    A, B, C = (torch.as_tensor(prep(XW[_rows(r)]), device=TDEV) for r in (tr, va, te))
+    prep = Prep(XW[_rows(prep_sample(tr, seed))])
+    A, B, C = (to_dev(prep, r) for r in (tr, va, te))
     net = make_mlp(A.shape[1])
     net, ep = _train(net, lambda b: A[torch.as_tensor(b, device=TDEV)] if not isinstance(b, slice) else A[b],
                      ytr, lambda s: B[s], yva, seed)
-    return _predict(net, lambda s: C[s], len(te)), ep
+    p = _predict(net, lambda s: C[s], len(te))
+    del A, B, C, net; gc.collect(); torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    return p, ep
 
 def fit_cnn(tr, ytr, va, yva, te, seed):
     torch.manual_seed(seed)
-    stats = Prep(GW[tr].astype(np.float32)).torch()
+    stats = Prep(GW[prep_sample(tr, seed)].astype(np.float32)).torch()
     net = CNN(K).to(TDEV)
     net, ep = _train(net, lambda b: cnn_window_batch(tr[b], stats), ytr,
                      lambda s: cnn_window_batch(va[s], stats), yva, seed)
-    return _predict(net, lambda s: cnn_window_batch(te[s], stats), len(te)), ep
+    p = _predict(net, lambda s: cnn_window_batch(te[s], stats), len(te))
+    del net; gc.collect(); torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    return p, ep
 
 def _fit_xgb(Xtr, ytr, Xva, yva, Xte, seed):
     clf = xgb.XGBClassifier(n_estimators=N_ROUNDS, early_stopping_rounds=EARLY, eval_metric='auc',
                             random_state=seed, **XGB_PARAMS)
     clf.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=False)
-    return clf.predict_proba(Xte)[:, 1], clf.best_iteration
+    p, it = clf.predict_proba(Xte)[:, 1], clf.best_iteration
+    del clf; gc.collect()
+    return p, it
 
 def fit_xgb60(tr, ytr, va, yva, te, seed):
     return _fit_xgb(X60[tr], ytr, X60[va], yva, X60[te], seed)
@@ -310,8 +339,10 @@ for (a, e) in blocks:
             P[(L, m)][te] = np.mean(ps, 0)
             LOG.append(dict(label=L, model=m, block=str(pd.to_datetime(ts5[a], unit='s').date()),
                             n_train=len(tr), n_val=len(va), n_test=len(te), best=its))
+            print(f'    {L} {m}: best {its} | {time.time() - t0:.0f}s', flush=True); mem(f'{L} {m}')
     print(f'block {pd.to_datetime(ts5[a], unit="s").date()}: train {len(tr):,} val {len(va):,} '
           f'test {len(te):,} | {time.time() - t0:.0f}s', flush=True)
+    mem('after block')
 print(pd.DataFrame(LOG).to_string(index=False))
 """
 
