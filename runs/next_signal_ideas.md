@@ -160,3 +160,76 @@ different return sources, not another angle on the same one.
 ### Order
 
 R1 + R3 (together ~1 h) → R4 → R2 → R5 → R6 → R7 → R8.
+
+---
+
+## Round 3 — big-move direction (2026-09-23)
+
+Brainstorm restricted to big-move slots: (1) OI / liquidation quadrant of the first leg,
+(2) moves go against the crowded side (funding, L/S), (3) break vs reject at price levels on 7-yr
+klines, (4) estimated liquidation-cluster magnets, (5) spot-led vs perp-led first leg, (6) maker fade
+ladder on detector slots, (7) scheduled slots (macro, funding times, expiry), (8) Coinbase premium,
+(9) options skew.
+
+- **Done — lower trigger + OI / funding / L-S conditioning: NULL** (`continuation_conditioned.analysis.md`).
+  After ±X bp (5–30), reaching 2X before the anchor is martingale; gross 0 ± 1 bp on 68 d (5 s) and
+  330 d (15 s); 3/90 conditioned cells CI > 0 (chance). Closes ideas 1 and 2 in their cheap form.
+- **Next cheap test:** idea 3 (price levels, 7-yr klines). Then R4 / R5 per the decision point.
+
+### MLP arm in R1 — pre-registration (2026-09-23, before the code)
+
+Question (user): does a flat deep net (MLP) on the same inputs find direction the tree model missed?
+Prior: low — xgboost already combines features non-linearly, and the ceilings (oracle, martingale
+continuation, 15 s decay) are about information, not model class. Added to
+`btc_latency_decay_probe.ipynb` so it costs one Colab run.
+
+- **Model:** PyTorch MLP, 60 features + missing-value flags, train-set clip at p0.5/p99.5 → z-score →
+  NaN = 0; 3 hidden layers 256-128-64, GELU, dropout 0.2, AdamW, early stop on val AUC; 3 seeds averaged.
+  Same `evt` training rows (all big-move bars), same label (90 s / ±20 bp first touch), same val window.
+- **C1, model-class test (primary for this arm):** v1 holdout on 15 s bars — train to 2026-05-14,
+  val 10 days, test 2026-05-25 → 08-15 (~80 days), identical splits for xgboost and MLP. AUC on
+  touched stage-1 triggers. **MLP better** iff AUC_mlp ≥ 0.62 **and** AUC_mlp − AUC_xgb ≥ 0.02 with
+  day-bootstrap 95 % CI lower bound > 0. Otherwise: model class is not the bottleneck; close
+  "deep net on these features".
+- **C2, economics:** arm `v1x_mlp` (whole v1 year → 5 s OOS) through the same R1 decay table and the
+  same pass line (gross at 5 s delay, CI lo > 9.0 bp, n ≥ 100). Information only unless C1 passes.
+- Also reported (information): holdout top-1 % / top-2 % tail gross at 0 and 15 s delay, both models;
+  AUC of the 50/50 average of both.
+
+### Status (2026-09-23) — R1 + MLP executed: both FAIL → decision point reached
+
+`latency_decay_probe.analysis.md`. R1: `v1x` top 1 % +5.3 bp @ 0 s → −0.4 @ 5 s (top 2 % +3.4 → −0.6);
+linear 1 s estimate +4.2 < 9, so no event-stream check; accrual +4.9 bp already in the first 5 s.
+C1: xgb 0.5956 vs MLP 0.5958 AUC (Δ +0.0001, CI [−0.014, +0.018]); tails identical. The 1d tail
+replicates on the May–Aug holdout (+13.8 bp @ 0 s → +4.8 @ 15 s). **BTC direction work stops; next
+R4 or R5.** Loose end: `v1x_mlp` 5 s tail (n ≈ 28, 10 days) — rerun only on post-09-20 5 s data.
+
+### W1 — wide raw-input 5 s DNN, two label arms — pre-registration (2026-09-23, before the code)
+
+Question (user): no deep net has ever seen the **full 825-column** 5 s collector output (full spot +
+futures ladders, OFI, add/cancel flow, early/late trade counts, walls, bursts, ETH mid). Runs 010 and
+009d–f used 76 engineered features; 1d / R1 / MLP used 60. Can a wide-input network find direction
+that survives entry latency? Prior: low (every signal so far is gone within ~15 s).
+
+- **Data:** `60days_data.tar` (412 files, one schema, 68.7 d). Mechanical, name-based transforms only
+  (no hand-crafted features): prices → bp vs futures mid, $ spreads / std → bp, ETH mid → 5 s return,
+  non-negative quantities → log1p, signed → asinh; drop timestamps, constants, duplicate `_sum`/`_count`
+  helpers, the time-to-funding column (time proxy). Spec saved as `harness_wide/wide_spec.json`.
+- **Label arms.** **D (primary): first touch of ±10 bp within 90 s measured from the bar *after* the
+  signal (t + 5 s)**, so the model cannot earn the first-seconds move that R1 showed is uncatchable.
+  **Z (secondary):** the same label from t, to see whether wide inputs sharpen the fast signal.
+  θ = 10 bp (not 20) for sample size: 128k training bars vs 21k.
+- **Models, per label:** `mlp` wide MLP on [bar, 1-min mean, 5-min mean] (~3 × 620 inputs);
+  `cnn` 1-D CNN over the last 12 bars (1 min) × all channels; controls `xgbw` xgboost on the same
+  flat wide inputs, `xgb60` xgboost on the 60 engineered features. Weekly walk-forward from day 21,
+  7-day val, purge 4 × 90 s, 2 seeds each.
+- **Trades:** as R1: stage-1 triggers (trailing 5-min RV, 7-day causal 5 %), tail on |p − 0.5| with an
+  expanding causal threshold, one position, hold 90 s from entry, delay 0 / 5 / 10 / 15 / 30 s.
+- **P1 (economics, primary):** any wide model (`mlp`, `cnn`, `xgbw`) under label D has top 1 % or
+  top 2 % gross at a **5 s** delay with day-bootstrap CI lower bound **> 9.0 bp** and n ≥ 100.
+- **P2 (DNN vs trees):** `mlp` or `cnn` AUC − `xgbw` AUC ≥ 0.02 with CI lower bound > 0 (label D,
+  touched stage-1 triggers, pooled OOS).
+- **P3 (wide vs engineered):** best wide AUC − `xgb60` AUC ≥ 0.02 with CI lower bound > 0 (label D).
+- Label Z is information only. **Kill:** P1 fails → wide-input 5 s direction closed, and with it BTC
+  direction from this collector.
+- Power: ~47 out-of-sample days in 7 weekly folds.

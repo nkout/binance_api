@@ -23,6 +23,11 @@ bar closes, and `harness_fees/fee_reprice.py` (R3) showed the reachable round tr
   out of sample, and a fresh replication of the tail. Features are the same 60, rebuilt on the 5 s grid
   with every window kept at the same **wall-clock** length (a "1-bar" 15 s quantity becomes a 3-bar
   rolling quantity), so the model sees the distribution it was trained on, sampled every 5 s.
+- **`v1x_mlp` (model-class arm):** same training rows, label, val window and scoring as `v1x`, but a
+  PyTorch MLP (256-128-64, GELU, dropout 0.2) on the same 60 features + missing flags instead of xgboost.
+  Plus **C1**, a head-to-head on a v1-year holdout (train → 2026-05-14, val 10 d, test 05-25 → 08-15,
+  15 s bars): MLP counts as better only if AUC ≥ 0.62 **and** AUC_mlp − AUC_xgb ≥ 0.02 with day-bootstrap
+  CI lower bound > 0 (pre-registered in `next_signal_ideas.md`, Round 3).
 - **`w5`, `mix` (exploratory):** walk-forward weekly on the 5 s set itself, and v1 year + 5 s past combined.
 - Stage 1 unchanged: trailing 5-min mean |15 s return|, 7-day causal quantile, 5 %.
 - Confident tail: |p − 0.5| above an **expanding causal quantile** of earlier out-of-sample days (≥ 3 days).
@@ -45,6 +50,7 @@ IN_COLAB = 'google.colab' in sys.modules
 if IN_COLAB:
     subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'xgboost>=2.0'], check=False)
 import numpy as np, pandas as pd, xgboost as xgb
+import torch, torch.nn as nn, torch.nn.functional as TF
 from sklearn.metrics import roc_auc_score
 
 def _has_gpu():
@@ -54,7 +60,8 @@ def _has_gpu():
         return False
 
 DEVICE = 'cuda' if _has_gpu() else 'cpu'
-print(f'xgboost {xgb.__version__} | device {DEVICE} | colab {IN_COLAB}')
+TDEV = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f'xgboost {xgb.__version__} | device {DEVICE} | torch {torch.__version__} on {TDEV} | colab {IN_COLAB}')
 if IN_COLAB:
     from google.colab import drive
     drive.mount('/content/drive')
@@ -86,6 +93,12 @@ EARLY = 30 if SMOKE else 150
 XGB_PARAMS = dict(max_depth=4, learning_rate=0.03, subsample=0.8, colsample_bytree=0.8,
                   min_child_weight=50, reg_lambda=5.0, tree_method='hist', device=DEVICE)
 INCLUDE_DEAD, TIME_FEATS = False, False
+MLP_HIDDEN, MLP_DROPOUT = (256, 128, 64), 0.2
+MLP_LR, MLP_WD, MLP_BATCH = 1e-3, 1e-4, 1024
+MLP_EPOCHS = 3 if SMOKE else 60
+MLP_PATIENCE = 2 if SMOKE else 6
+HOLDOUT_SPLIT = int(pd.Timestamp(os.environ.get('HOLDOUT_SPLIT', '2026-05-15'), tz='UTC').timestamp())
+C1_MIN_AUC, C1_MIN_DIFF = 0.62, 0.02
 N_BOOT = 500 if SMOKE else 4000
 RNG = np.random.default_rng(0)
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -279,7 +292,64 @@ print(f'feature corr v1 vs w5 at the same ts: median {XC["corr"].median():.3f}, 
 print(XC.head(12).round(3).to_string(index=False))
 """
 
-C_TRAIN = r"""# Cell 6 — train and score. v1x = whole v1 year; w5 / mix = weekly walk-forward on the 5 s set.
+C_MLP = r"""# Cell 6 — MLP (model-class arm). Preprocessing is fitted on the training rows only.
+class Prep:
+    def __init__(self, X):
+        with np.errstate(all='ignore'):
+            import warnings; warnings.filterwarnings('ignore', category=RuntimeWarning)
+            self.lo = np.nan_to_num(np.nanpercentile(X, 0.5, 0)); self.hi = np.nan_to_num(np.nanpercentile(X, 99.5, 0))
+            Xc = np.clip(X, self.lo, self.hi)
+            self.mu = np.nan_to_num(np.nanmean(Xc, 0)); sd = np.nan_to_num(np.nanstd(Xc, 0))
+        self.sd = np.where(sd > 1e-9, sd, 1.0)
+        self.miss = np.flatnonzero(np.isnan(X).mean(0) > 0.001)          # add a flag for features that go missing
+    def __call__(self, X):
+        Z = np.nan_to_num((np.clip(X, self.lo, self.hi) - self.mu) / self.sd, nan=0.0)
+        return np.hstack([Z, np.isnan(X[:, self.miss])]).astype(np.float32)
+
+def make_net(d_in):
+    layers, d = [], d_in
+    for h in MLP_HIDDEN:
+        layers += [nn.Linear(d, h), nn.GELU(), nn.Dropout(MLP_DROPOUT)]; d = h
+    return nn.Sequential(*layers, nn.Linear(d, 1)).to(TDEV)
+
+@torch.no_grad()
+def net_predict(net, Z):
+    net.eval(); out = []
+    for i in range(0, len(Z), 65536):
+        out.append(torch.sigmoid(net(torch.as_tensor(Z[i:i + 65536], device=TDEV)).squeeze(1)).cpu().numpy())
+    return np.concatenate(out) if out else np.zeros(0, np.float32)
+
+def fit_mlp(Xtr, ytr, Xva, yva, seed):
+    torch.manual_seed(seed); gen = torch.Generator().manual_seed(seed)
+    prep = Prep(Xtr); A, B = prep(Xtr), prep(Xva)
+    net = make_net(A.shape[1]); opt = torch.optim.AdamW(net.parameters(), lr=MLP_LR, weight_decay=MLP_WD)
+    At = torch.as_tensor(A, device=TDEV); yt = torch.as_tensor(np.asarray(ytr, np.float32), device=TDEV)
+    best, best_ep, bad, state = -np.inf, -1, 0, None
+    for ep in range(MLP_EPOCHS):
+        net.train(); perm = torch.randperm(len(A), generator=gen).to(TDEV)
+        for i in range(0, len(A), MLP_BATCH):
+            b = perm[i:i + MLP_BATCH]
+            loss = TF.binary_cross_entropy_with_logits(net(At[b]).squeeze(1), yt[b])
+            opt.zero_grad(); loss.backward(); opt.step()
+        auc = roc_auc_score(yva, net_predict(net, B)) if len(np.unique(yva)) == 2 else 0.5
+        if auc > best + 1e-4:
+            best, best_ep, bad = auc, ep, 0; state = {k: v.detach().clone() for k, v in net.state_dict().items()}
+        else:
+            bad += 1
+            if bad >= MLP_PATIENCE: break
+    net.load_state_dict(state)
+    return net, prep, best_ep, best
+
+def mlp_ens_predict(Xtr, ytr, Xva, yva, Xte):
+    ps, eps = [], []
+    for sd in SEEDS:
+        net, prep, ep, _ = fit_mlp(Xtr, ytr, Xva, yva, sd); ps.append(net_predict(net, prep(Xte))); eps.append(ep)
+    return np.mean(ps, 0), eps
+print(f'MLP {MLP_HIDDEN} dropout {MLP_DROPOUT} | epochs <= {MLP_EPOCHS}, patience {MLP_PATIENCE} | {TDEV}')
+"""
+
+
+C_TRAIN = r"""# Cell 7 — train and score. v1x / v1x_mlp = whole v1 year; w5 / mix = weekly walk-forward on the 5 s set.
 def fit(Xtr, ytr, Xva, yva, seed):
     clf = xgb.XGBClassifier(n_estimators=N_ROUNDS, early_stopping_rounds=EARLY, eval_metric='auc',
                             random_state=seed, **XGB_PARAMS)
@@ -296,7 +366,7 @@ def ens_predict(Xtr, ytr, Xva, yva, Xte):
     return np.mean(ps, 0), its
 
 G5 = len(D5['ts'])
-P = {a: np.full(G5, np.nan, np.float32) for a in ('v1x', 'w5', 'mix')}
+P = {a: np.full(G5, np.nan, np.float32) for a in ('v1x', 'v1x_mlp', 'w5', 'mix')}
 LOG = []
 t0 = time.time()
 y1, y5 = D1['lab']['up'].astype(np.int8), D5['lab']['up'].astype(np.int8)
@@ -310,6 +380,9 @@ te = np.flatnonzero((D5['ts'] >= max(OOS_START, D1['ts'][-1] + H_SEC)) & D5['lab
 P['v1x'][te], its = ens_predict(D1['X'][tr], y1[tr], D1['X'][va], y1[va], D5['X'][te])
 LOG.append(dict(arm='v1x', block='all OOS', n_train=len(tr), n_val=len(va), n_test=len(te), best_iter=its))
 print(f'v1x: train {len(tr):,} val {len(va):,} -> scored {len(te):,} 5 s bars | best_iter {its} | {time.time() - t0:.0f}s')
+P['v1x_mlp'][te], eps = mlp_ens_predict(D1['X'][tr], y1[tr], D1['X'][va], y1[va], D5['X'][te])
+LOG.append(dict(arm='v1x_mlp', block='all OOS', n_train=len(tr), n_val=len(va), n_test=len(te), best_iter=eps))
+print(f'v1x_mlp: best_epoch {eps} | {time.time() - t0:.0f}s')
 
 # weekly blocks on the 5 s set
 w_start = D5['ts'][0] + MIN_TRAIN_DAYS_W5 * 86400
@@ -338,7 +411,7 @@ for (a, e) in blocks:
 print(pd.DataFrame(LOG).to_string(index=False))
 """
 
-C_AUC = r"""# Cell 7 — sanity: stage-2 AUC on out-of-sample 5 s stage-1 triggers that touched a barrier
+C_AUC = r"""# Cell 8 — sanity: stage-2 AUC on out-of-sample 5 s stage-1 triggers that touched a barrier
 OOS = D5['ts'] >= OOS_START
 AUC = {}
 for arm in P:
@@ -350,7 +423,76 @@ print(pd.DataFrame(AUC).T.to_string())
 print('(1d reference on 15 s, 9 months: 0.584)')
 """
 
-C_DECAY = r"""# Cell 8 — the decay: confident tail x entry delay, one position at a time, hold 90 s after entry
+C_HOLDOUT = r"""# Cell 9 — C1: xgboost vs MLP head-to-head on a v1-year holdout (15 s bars, identical splits)
+t0 = time.time()
+n1 = len(D1['ts']); lm1, HB1 = D1['lm'], H_SEC // 15
+s_ = int(np.searchsorted(D1['ts'], HOLDOUT_SPLIT)); v_hi = s_ + VAL_DAYS_V1 * bday1; te_lo = v_hi + purge1
+tr_h, va_h = evt_rows(D1, 0, s_ - purge1), evt_rows(D1, s_, v_hi)
+te_h = np.arange(te_lo, n1)[D1['lab']['valid'][te_lo:n1]]
+Xtr, Xva, Xte = D1['X'][tr_h], D1['X'][va_h], D1['X'][te_h]
+p_x, it_x = ens_predict(Xtr, y1[tr_h], Xva, y1[va_h], Xte)
+p_m, ep_m = mlp_ens_predict(Xtr, y1[tr_h], Xva, y1[va_h], Xte)
+PH = {'xgb': p_x, 'mlp': p_m, 'avg': (p_x + p_m) / 2}
+tg, yh, dh = D1['trig'][te_h], D1['lab']['up'][te_h], D1['day'][te_h]
+m = tg & D1['lab']['touched'][te_h]
+def auc_(y, p): return float(roc_auc_score(y, p)) if len(np.unique(y)) == 2 else np.nan
+A = {k: auc_(yh[m], v[m]) for k, v in PH.items()}
+ud = np.unique(dh[m]); by = {u: np.flatnonzero(m & (dh == u)) for u in ud}
+diffs = []
+for _ in range(300 if SMOKE else 1000):
+    ii = np.concatenate([by[u] for u in RNG.choice(ud, len(ud))])
+    diffs.append(auc_(yh[ii], p_m[ii]) - auc_(yh[ii], p_x[ii]))
+dci = [float(x) for x in np.nanpercentile(diffs, [2.5, 97.5])]
+mon = pd.to_datetime(D1['ts'][te_h], unit='s').strftime('%y%m').to_numpy()
+MON = {mo: {k: auc_(yh[m & (mon == mo)], v[m & (mon == mo)]) for k, v in PH.items()} for mo in np.unique(mon[m])}
+
+def _boot(v, days):
+    u = np.unique(days); s = np.array([v[days == x].sum() for x in u]); c = np.array([(days == x).sum() for x in u])
+    bi = RNG.integers(0, len(u), (N_BOOT, len(u))); mm = s[bi].sum(1) / c[bi].sum(1)
+    return [float(np.percentile(mm, 2.5)), float(np.percentile(mm, 97.5))]
+
+def tail_trades_15(p, q, d):
+    conf, cand = np.abs(p - 0.5), tg & np.isfinite(p)
+    sel = np.zeros(len(te_h), bool)
+    for i, dd in enumerate(np.unique(dh[cand])):               # expanding causal threshold, as in cell 10
+        if i < MIN_TAIL_DAYS: continue
+        cur = cand & (dh == dd); sel[cur] = conf[cur] >= np.quantile(conf[cand & (dh < dd)], 1 - q)
+    take, busy = [], -1
+    for j in np.flatnonzero(sel):
+        t = te_h[j]
+        if t > busy and t + d + HB1 < n1 and np.isfinite(lm1[t:t + d + HB1 + 1]).all():
+            take.append(j); busy = t + d + HB1
+    take = np.array(take, np.int64); t = te_h[take]
+    return take, np.where(p[take] >= 0.5, 1, -1) * (lm1[t + d + HB1] - lm1[t + d]) * 1e4
+
+TROWS = []
+for k, p in PH.items():
+    for q in PRIMARY_TAILS:
+        for d in (0, 1):
+            take, g_ = tail_trades_15(p, q, d)
+            r = dict(model=k, tail=q, delay_s=15 * d, n=len(take))
+            if len(take) >= 20:
+                r.update(days=int(len(np.unique(dh[take]))), acc=float((g_ > 0).mean()), gross=float(g_.mean()),
+                         gross_ci=_boot(g_, dh[take]))
+            TROWS.append(r)
+mlp_better = bool(A['mlp'] >= C1_MIN_AUC and A['mlp'] - A['xgb'] >= C1_MIN_DIFF and dci[0] > 0)
+HO = dict(split=HOLDOUT_SPLIT, n_train=len(tr_h), n_val=len(va_h), n_auc=int(m.sum()), days=int(len(ud)),
+          auc=A, diff_mlp_xgb=A['mlp'] - A['xgb'], diff_ci=dci, per_month=MON, tails=TROWS,
+          xgb_best_iter=it_x, mlp_best_epoch=ep_m, mlp_better=mlp_better)
+HO_ARR = dict(ts=D1['ts'][te_h], p_xgb=p_x, p_mlp=p_m, up=yh, trig=tg, touched=D1['lab']['touched'][te_h])
+print(f'holdout: train {len(tr_h):,} evt bars | test from {pd.to_datetime(D1["ts"][te_lo], unit="s").date()} | '
+      f'{int(m.sum()):,} touched triggers on {len(ud)} days | xgb iters {it_x} | mlp epochs {ep_m} | {time.time() - t0:.0f}s')
+print('AUC  ' + '  '.join(f'{k} {v:.4f}' for k, v in A.items()) + f'   (1d reference 0.584)')
+print(f'MLP - XGB = {A["mlp"] - A["xgb"]:+.4f}  day-bootstrap 95 % CI [{dci[0]:+.4f}, {dci[1]:+.4f}]')
+print(pd.DataFrame(MON).T.round(3).to_string())
+tt = pd.DataFrame(TROWS)
+if 'gross_ci' in tt:
+    tt['gross_ci'] = tt['gross_ci'].apply(lambda c: f'[{c[0]:+.2f},{c[1]:+.2f}]' if isinstance(c, list) else '')
+print(tt.round(3).to_string(index=False))
+print('C1:', 'MLP BETTER' if mlp_better else 'MLP NOT BETTER', f'(needs AUC >= {C1_MIN_AUC}, diff >= {C1_MIN_DIFF}, CI lo > 0)')
+"""
+
+C_DECAY = r"""# Cell 10 — the decay: confident tail x entry delay, one position at a time, hold 90 s after entry
 BAR5 = 5; HB = H_SEC // BAR5
 lm5, day5 = D5['lm'], D5['day']
 
@@ -408,7 +550,7 @@ show['gross_ci'] = show['gross_ci'].apply(lambda c: f'[{c[0]:+.2f},{c[1]:+.2f}]'
 print(show.round(3).to_string(index=False))
 """
 
-C_PATH = r"""# Cell 9 — accrual curve: where does the edge build up after the signal? (zero-delay trades)
+C_PATH = r"""# Cell 11 — accrual curve: where does the edge build up after the signal? (zero-delay trades)
 KP = PATH_SEC // BAR5
 PATHS = {}
 for arm in P:
@@ -425,32 +567,40 @@ print('mean signed move since the signal close, bp:')
 print(tab.round(2).to_string())
 """
 
-C_VERDICT = r"""# Cell 10 — pre-registered verdict (primary arm v1x, tails top 1 % / top 2 %)
-V = {}
-for q in PRIMARY_TAILS:
-    r0 = DEC[(DEC.arm == 'v1x') & (DEC.tail == q) & (DEC.delay == 0)]
-    r5 = DEC[(DEC.arm == 'v1x') & (DEC.tail == q) & (DEC.delay == 5)]
-    if r0.empty or r5.empty or r5['n'].iloc[0] < 20 or 'gross' not in r5 or pd.isna(r5['gross'].iloc[0]):
-        V[q] = dict(pass_=False, note='too few trades'); continue
-    g0, g5, n5, ci5 = r0['gross'].iloc[0], r5['gross'].iloc[0], int(r5['n'].iloc[0]), r5['gross_ci'].iloc[0]
-    est1 = g0 - (g0 - g5) / 5
-    V[q] = dict(g0=float(g0), g5=float(g5), n5=n5, ci5=ci5, est_1s=float(est1),
-                pass_=bool(n5 >= 100 and ci5[0] > PASS_FEE), flag_event=bool(ci5[0] <= PASS_FEE and est1 >= PASS_FEE))
-for q, v in V.items():
-    if 'g0' in v:
-        print(f'v1x top {q:.0%}: gross 0 s {v["g0"]:+.2f} | 5 s {v["g5"]:+.2f} CI [{v["ci5"][0]:+.2f},{v["ci5"][1]:+.2f}] '
-              f'n {v["n5"]} | linear 1 s estimate {v["est_1s"]:+.2f} | {"PASS" if v["pass_"] else "FAIL"}'
-              f'{"  -> EVENT-STREAM CHECK" if v["flag_event"] else ""}')
-    else:
-        print(f'v1x top {q:.0%}: {v["note"]}')
+C_VERDICT = r"""# Cell 12 — pre-registered verdict (primary arm v1x, tails top 1 % / top 2 %); v1x_mlp = C2, same rule
+def verdict(arm):
+    V = {}
+    for q in PRIMARY_TAILS:
+        r0 = DEC[(DEC['arm'] == arm) & (DEC['tail'] == q) & (DEC['delay'] == 0)]
+        r5 = DEC[(DEC['arm'] == arm) & (DEC['tail'] == q) & (DEC['delay'] == 5)]
+        if r0.empty or r5.empty or r5['n'].iloc[0] < 20 or 'gross' not in r5 or pd.isna(r5['gross'].iloc[0]):
+            V[q] = dict(pass_=False, note='too few trades'); continue
+        g0, g5, n5, ci5 = r0['gross'].iloc[0], r5['gross'].iloc[0], int(r5['n'].iloc[0]), r5['gross_ci'].iloc[0]
+        est1 = g0 - (g0 - g5) / 5
+        V[q] = dict(g0=float(g0), g5=float(g5), n5=n5, ci5=ci5, est_1s=float(est1),
+                    pass_=bool(n5 >= 100 and ci5[0] > PASS_FEE), flag_event=bool(ci5[0] <= PASS_FEE and est1 >= PASS_FEE))
+    for q, v in V.items():
+        if 'g0' in v:
+            print(f'{arm} top {q:.0%}: gross 0 s {v["g0"]:+.2f} | 5 s {v["g5"]:+.2f} CI [{v["ci5"][0]:+.2f},{v["ci5"][1]:+.2f}] '
+                  f'n {v["n5"]} | linear 1 s estimate {v["est_1s"]:+.2f} | {"PASS" if v["pass_"] else "FAIL"}'
+                  f'{"  -> EVENT-STREAM CHECK" if v["flag_event"] else ""}')
+        else:
+            print(f'{arm} top {q:.0%}: {v["note"]}')
+    return V
+V = verdict('v1x')
 PASSED = any(v['pass_'] for v in V.values())
 FLAG = any(v.get('flag_event') for v in V.values())
 print('VERDICT:', 'PASS — the tail survives a 5 s delay at the reachable fee; build an execution study' if PASSED
       else ('FAIL at 5 s, but the 1 s estimate clears 9 bp — only sub-second event data can settle it' if FLAG
             else 'FAIL — the confident tail does not survive realistic entry latency at reachable fees'))
+print()
+V_MLP = verdict('v1x_mlp')
+PASSED_MLP = any(v['pass_'] for v in V_MLP.values())
+print('MLP C2 (economics):', 'PASS' if PASSED_MLP else 'FAIL',
+      '| C1 (model class):', 'MLP BETTER' if HO['mlp_better'] else 'NOT BETTER — model class is not the bottleneck')
 """
 
-C_SAVE = r"""# Cell 11 — save
+C_SAVE = r"""# Cell 13 — save
 def _j(o):
     if isinstance(o, dict): return {str(k): _j(v) for k, v in o.items()}
     if isinstance(o, (list, tuple)): return [_j(v) for v in o]
@@ -460,9 +610,11 @@ def _j(o):
 res = dict(config=dict(OOS_START=OOS_START, H_SEC=H_SEC, THETA=THETA, TAILS=TAILS, DELAYS_SEC=DELAYS_SEC,
                        FEE_RT=FEE_RT, PASS_FEE=PASS_FEE, SEEDS=SEEDS, SMOKE=SMOKE),
            transfer=XC.to_dict('records'), fits=LOG, auc=AUC, decay=DEC.to_dict('records'),
-           paths={k: v.tolist() for k, v in PATHS.items()}, verdict=V, passed=PASSED, event_flag=FLAG)
+           paths={k: v.tolist() for k, v in PATHS.items()}, verdict=V, passed=PASSED, event_flag=FLAG,
+           holdout_c1=HO, verdict_mlp=V_MLP, passed_mlp=PASSED_MLP)
 json.dump(_j(res), open(os.path.join(OUT_DIR, 'latency_decay_results.json'), 'w'), indent=1, default=float)
 keep = np.isfinite(P['v1x']) | np.isfinite(P['w5'])
+np.savez_compressed(os.path.join(OUT_DIR, 'holdout_c1_scores.npz'), **{k: v for k, v in HO_ARR.items()})
 np.savez_compressed(os.path.join(OUT_DIR, 'latency_decay_scores.npz'), ts=D5['ts'][keep],
                     **{f'p_{a}': P[a][keep] for a in P}, trig=D5['trig'][keep],
                     up=D5['lab']['up'][keep], touched=D5['lab']['touched'][keep], lm=D5['lm'][keep])
@@ -470,8 +622,8 @@ print('saved to', OUT_DIR, os.listdir(OUT_DIR))
 """
 
 CELLS = [("md", MD0), ("code", C_SETUP), ("code", C_CONFIG), ("code", C_LOAD), ("code", C_FEAT),
-         ("code", C_XFER), ("code", C_TRAIN), ("code", C_AUC), ("code", C_DECAY), ("code", C_PATH),
-         ("code", C_VERDICT), ("code", C_SAVE)]
+         ("code", C_XFER), ("code", C_MLP), ("code", C_TRAIN), ("code", C_AUC), ("code", C_HOLDOUT),
+         ("code", C_DECAY), ("code", C_PATH), ("code", C_VERDICT), ("code", C_SAVE)]
 
 
 def build(path=OUT):

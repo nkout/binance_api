@@ -1,0 +1,36 @@
+X=5 tgt=10 delay=0s all            n= 24775  P(win)=0.608  gross= +0.20 [+0.11,+0.29]  net@9= -8.80  long=+0.23 short=+0.16
+X=5 tgt=10 delay=0s hiRV           n=  9328  P(win)=0.642  gross= +0.27 [+0.13,+0.40]  net@9= -8.73  long=+0.37 short=+0.17
+X=5 tgt=10 delay=5s all            n= 24209  P(win)=0.599  gross= -0.03 [-0.10,+0.04]  net@9= -9.03  long=+0.02 short=-0.08
+X=5 tgt=10 delay=5s hiRV           n=  8846  P(win)=0.625  gross= +0.02 [-0.11,+0.16]  net@9= -8.98  long=+0.15 short=-0.12
+X=5 tgt=15 delay=0s all            n= 16937  P(win)=0.441  gross= +0.15 [+0.02,+0.30]  net@9= -8.85  long=+0.27 short=+0.04
+X=5 tgt=15 delay=0s hiRV           n=  6594  P(win)=0.484  gross= +0.23 [-0.02,+0.53]  net@9= -8.77  long=+0.52 short=-0.07
+X=5 tgt=15 delay=5s all            n= 16764  P(win)=0.440  gross= +0.01 [-0.12,+0.12]  net@9= -8.99  long=+0.08 short=-0.07
+X=5 tgt=15 delay=5s hiRV           n=  6443  P(win)=0.485  gross= +0.17 [-0.02,+0.40]  net@9= -8.83  long=+0.39 short=-0.06
+
+X=10 tgt=20 delay=0s all           n=  7818  P(win)=0.565  gross= +0.12 [-0.10,+0.33]  net@9= -8.88  long=+0.34 short=-0.10
+X=10 tgt=20 delay=0s hiRV          n=  3353  P(win)=0.604  gross= +0.49 [+0.12,+0.95]  net@9= -8.51  long=+1.13 short=-0.17
+X=10 tgt=20 delay=5s all           n=  7722  P(win)=0.565  gross= -0.10 [-0.28,+0.11]  net@9= -9.10  long=+0.08 short=-0.28
+X=10 tgt=20 delay=5s hiRV          n=  3261  P(win)=0.597  gross= +0.10 [-0.30,+0.60]  net@9= -8.90  long=+0.61 short=-0.43
+X=10 tgt=30 delay=0s all           n=  5158  P(win)=0.384  gross= -0.32 [-0.80,+0.15]  net@9= -9.32  long=+0.21 short=-0.86
+X=10 tgt=30 delay=0s hiRV          n=  2245  P(win)=0.436  gross= +0.56 [-0.27,+1.52]  net@9= -8.44  long=+1.46 short=-0.35
+X=10 tgt=30 delay=5s all           n=  5101  P(win)=0.386  gross= -0.35 [-0.80,+0.10]  net@9= -9.35  long=+0.15 short=-0.87
+X=10 tgt=30 delay=5s hiRV          n=  2215  P(win)=0.432  gross= +0.35 [-0.41,+1.16]  net@9= -8.65  long=+1.05 short=-0.37
+
+X=15 tgt=30 delay=0s all           n=  3637  P(win)=0.553  gross= +0.37 [-0.12,+0.91]  net@9= -8.63  long=+0.90 short=-0.17
+X=15 tgt=30 delay=0s hiRV          n=  1727  P(win)=0.570  gross= +0.49 [-0.47,+1.26]  net@9= -8.51  long=+1.09 short=-0.16
+X=15 tgt=30 delay=5s all           n=  3613  P(win)=0.545  gross= -0.20 [-0.65,+0.26]  net@9= -9.20  long=+0.30 short=-0.72
+X=15 tgt=30 delay=5s hiRV          n=  1702  P(win)=0.562  gross= -0.26 [-1.08,+0.40]  net@9= -9.26  long=+0.58 short=-1.15
+X=15 tgt=45 delay=0s all           n=  2307  P(win)=0.354  gross= -1.06 [-2.17,-0.14]  net@9=-10.06  long=+0.30 short=-2.37
+X=15 tgt=45 delay=0s hiRV          n=  1138  P(win)=0.412  gross= +0.93 [-0.49,+2.29]  net@9= -8.07  long=+3.61 short=-1.70
+X=15 tgt=45 delay=5s all           n=  2285  P(win)=0.349  gross= -1.51 [-2.48,-0.81]  net@9=-10.51  long=-0.20 short=-2.78
+X=15 tgt=45 delay=5s hiRV          n=  1111  P(win)=0.413  gross= +0.71 [-0.48,+1.77]  net@9= -8.29  long=+3.17 short=-1.77
+
+X=20 tgt=40 delay=0s all           n=  1959  P(win)=0.543  gross= +0.13 [-0.71,+1.07]  net@9= -8.87  long=+0.73 short=-0.50
+X=20 tgt=40 delay=0s hiRV          n=  1012  P(win)=0.560  gross= +0.34 [-1.37,+1.80]  net@9= -8.66  long=+1.68 short=-1.09
+X=20 tgt=40 delay=5s all           n=  1951  P(win)=0.539  gross= -0.06 [-0.96,+0.66]  net@9= -9.06  long=+0.53 short=-0.69
+X=20 tgt=40 delay=5s hiRV          n=  1003  P(win)=0.562  gross= +0.64 [-0.81,+1.99]  net@9= -8.36  long=+1.89 short=-0.70
+X=20 tgt=60 delay=0s all           n=  1231  P(win)=0.328  gross= -2.84 [-5.08,-1.05]  net@9=-11.84  long=-0.10 short=-5.39
+X=20 tgt=60 delay=0s hiRV          n=   653  P(win)=0.371  gross= -1.24 [-3.97,+1.31]  net@9=-10.24  long=+3.06 short=-5.30
+X=20 tgt=60 delay=5s all           n=  1217  P(win)=0.316  gross= -3.84 [-5.54,-2.44]  net@9=-12.84  long=-1.14 short=-6.32
+X=20 tgt=60 delay=5s hiRV          n=   630  P(win)=0.356  gross= -2.37 [-4.60,-0.19]  net@9=-11.37  long=+1.49 short=-6.08
+
