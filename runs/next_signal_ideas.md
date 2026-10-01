@@ -241,3 +241,66 @@ finds a real delayed signal the trees miss (label D AUC 0.527, CI [0.516, 0.544]
 over `xgbw`), but on these triggers the 90 s move is ~10 bp ≈ the fee, so the top-confidence decile
 earns +0.9 bp. **BTC direction from this collector is closed. Next: R4 (cross-sectional) or R5
 (funding carry).**
+
+---
+
+## R4 — cross-sectional perp factors — pre-registration (2026-10-01, before the code)
+
+Rank coins against each other instead of timing BTC: long the strongest / short the weakest on a
+factor, dollar-neutral. Cancels the drift confound by construction, the rank *is* the trade, and N
+coins per day multiply the sample. Daily frequency, local CPU.
+
+**Data (survivorship-free).** Every USDT-M perpetual ever listed, from the Binance public archive
+(`data.binance.vision`, which keeps delisted contracts: LUNA, FTT, SRM, …): 1 h klines (OHLC, quote
+volume, taker-buy volume) and funding-rate history, 2020-01 → 2026-08. Symbols must match
+`^[A-Z0-9]+USDT$` (no delivery contracts, no `…SETTLED` relists). Excluded bases: stablecoins / fiat /
+indices (USDC, BUSD, TUSD, FDUSD, USDP, DAI, EUR, BTCDOM, DEFI, and any symbol whose 30-day realised
+volatility is < 1 % annualised, i.e. pegged).
+
+**Universe, point in time, each day at 00:00 UTC:** listed ≥ 60 days, complete 1 h data for the
+previous 30 days, **top 40 by trailing 30-day quote volume**. The study starts on the first day with
+≥ 40 eligible contracts.
+
+**Factors (fixed definitions, no tuning):**
+| id | definition at day t (data up to 00:00) |
+|---|---|
+| MOM28 | log return t−28 d → t−1 d (skips the last day) |
+| MOM7 | log return t−7 d → t−1 d |
+| REV1 | log return t−1 d → t |
+| FUND7 | mean funding rate per 8 h over the last 7 days |
+| VSHOCK | log(quote volume last 24 h / mean daily quote volume of the prior 30 d) |
+| RVOL30 | std of 1 h log returns over the last 30 days |
+
+**Sign** of each factor is fixed on the **in-sample period = first 2 years of the study** by the sign of
+its mean daily rank IC, then never changed. **Out-of-sample = everything after** (~4 years). All
+verdicts are on OOS only.
+
+**Portfolio.** Daily rebalance at 00:00 UTC; long the top quintile (8 coins), short the bottom
+quintile (8), equal weight, dollar-neutral (1 long + 1 short gross). Holding H ∈ {1, 3, 7} days via H
+staggered sub-books (each 1/H of capital), so the daily P&L is non-overlapping. Returns are
+close-to-close from 1 h closes; **funding is real P&L** (longs pay, shorts receive every settlement
+while held); **cost 4.5 bp per side** × turnover (VIP0 + BNB taker). A delisted coin is closed at its
+last available price.
+
+**Metrics per factor × H (18 cells).** OOS mean daily net return, annualised Sharpe, Newey–West t
+(10 lags), c\* = gross mean / mean daily one-way turnover (break-even cost per side, bp), per-year
+table, max drawdown, BTC beta, long / short leg split, and a **1 h entry-lag** row (enter at 01:00
+instead of 00:00: the latency control).
+
+**Null.** Cross-sectional permutation: shuffle factor values across coins within each day (1,000×) →
+percentile of the OOS gross mean.
+
+**PASS for a cell (all required):** OOS net mean > 0 with **Holm-corrected p < 0.05 across the 18
+cells**; c\* ≥ 6.75 bp (1.5 × the 4.5 bp cost); positive net in ≥ 3 of the 4 OOS years; permutation
+percentile ≥ 97.5; net > 0 with the 1 h entry lag. **Kill:** no cell passes → R4 closed in this form
+(price / volume / funding factors, top-40, daily) → R5. Open interest is not included (archive history
+only from late 2021); if a cell passes, an OI factor becomes a separate pre-registered test.
+
+### Status (2026-10-01) — R4 executed: FAIL
+
+`r4_xsec.analysis.md`. No cell passes Holm. The rank signals are real out of sample (low-vol IC
+−0.099, t −14.7; 1–28 d reversal t −3 to −4), but equal-weight shorts of volatile alts lose on the
+mean (median +22.6 bp/day vs mean −7.8 for RVOL30) to +150–500 % pump days. Only FUND7 (long
+negative-funding coins) is positive: +17.2 bp/day net, 3/4 years, perm 98.7, but NW t 1.32 and the
+gross is entirely funding collected. **Next: R5 (delta-neutral funding carry)**; optional R4b
+(inverse-vol, capped weights) only as a new pre-registration tested on post-2026-08 data.
