@@ -233,3 +233,11 @@ that survives entry latency? Prior: low (every signal so far is gone within ~15 
 - Label Z is information only. **Kill:** P1 fails → wide-input 5 s direction closed, and with it BTC
   direction from this collector.
 - Power: ~47 out-of-sample days in 7 weekly folds.
+
+### Status (2026-10-01) — W1 executed: P1 FAIL (P2 / P3 pass, economically irrelevant)
+
+`wide_probe.analysis.md`. No wide model clears 9 bp at a 5 s delay (best +2.08 bp, n = 60). The MLP
+finds a real delayed signal the trees miss (label D AUC 0.527, CI [0.516, 0.544], 7/7 weeks; +0.027
+over `xgbw`), but on these triggers the 90 s move is ~10 bp ≈ the fee, so the top-confidence decile
+earns +0.9 bp. **BTC direction from this collector is closed. Next: R4 (cross-sectional) or R5
+(funding carry).**
