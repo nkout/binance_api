@@ -1,0 +1,22 @@
+panels + spot: 857 perps, 282 with spot | study 2020-10-14 -> 2026-08-30 | mean eligible/day 31.2 of 40 | 47s
+CARRY+: ann +3.65 % | 49s
+CARRY-: ann +37.33 % | 52s
+
+study 2020-10-14 -> 2026-08-30 (2147 d) | risk-free 4.5 %
+
+CARRY+: ann net +3.65 % | Sharpe 2.61 | NW t 3.15 | worst month -1.37 % | max DD -2.87 % | funding +4.18 %/yr
+   years: 2020 +2.12%  2021 +11.97%  2022 +0.00%  2023 +1.44%  2024 +8.76%  2025 -2.65%  2026 -0.14%
+   lag 1 h +3.62 % | gross +4.05 = funding +4.18 + basis -0.13 | costs 0.39 | mean positions 1.05 | invested 17 % of days | 129 episodes, mean hold 17.5 d, 86 coins | per-position +51.3 %/yr | margin-stress episodes 54
+   top coins: {'ADAUSDT': 4, 'FTMUSDT': 4, 'TIAUSDT': 4, 'XLMUSDT': 4, 'ATOMUSDT': 3, 'ETCUSDT': 3, 'ORDIUSDT': 3, 'TRBUSDT': 3, 'WLDUSDT': 3, '1000SATSUSDT': 2}
+
+BTCETH: ann net +8.77 % | Sharpe 9.50 | NW t 8.51 | worst month -0.44 % | max DD -0.61 % | funding +8.84 %/yr
+   years: 2020 +4.20%  2021 +25.46%  2022 +1.80%  2023 +5.95%  2024 +9.38%  2025 +3.75%  2026 +1.03%
+
+CARRY-: ann net +37.33 % | Sharpe 3.35 | NW t 5.37 | worst month -0.07 % | max DD -0.72 % | funding +30.30 %/yr
+   years: 2020 +1.87%  2021 +5.73%  2022 +36.26%  2023 +33.64%  2024 +3.57%  2025 +74.84%  2026 +63.65%
+   lag 1 h +36.03 % | gross +38.66 = funding +30.30 + basis +8.37 | costs 1.34 | mean positions 3.07 | invested 81 % of days | 439 episodes, mean hold 15.0 d, 193 coins | per-position +167.8 %/yr
+   top coins: {'BNBUSDT': 17, 'WAVESUSDT': 11, 'BCHUSDT': 10, 'ENAUSDT': 9, 'TRUMPUSDT': 9, 'CRVUSDT': 8, 'TRXUSDT': 8, 'APEUSDT': 6, 'API3USDT': 6, 'AXSUSDT': 6}
+
+CARRY+ excess over BTCETH: -5.11 %/yr (NW t -5.16)
+criteria: {'ann_ge_rf': False, 'every_year_pos': False, 'worst_month': True, 'nw_t': True, 'lag_pos': True}
+VERDICT: FAIL

@@ -304,3 +304,50 @@ mean (median +22.6 bp/day vs mean −7.8 for RVOL30) to +150–500 % pump days. 
 negative-funding coins) is positive: +17.2 bp/day net, 3/4 years, perm 98.7, but NW t 1.32 and the
 gross is entirely funding collected. **Next: R5 (delta-neutral funding carry)**; optional R4b
 (inverse-vol, capped weights) only as a new pre-registration tested on post-2026-08 data.
+
+---
+
+## R5 — delta-neutral funding carry — pre-registration (2026-10-01, before the code)
+
+R4 found funding to be the only positive return source (FUND7 +33 bp/day of funding collected) and the
+right-tail price risk to be what sinks unhedged books. R5 collects funding with the price risk hedged:
+**long spot + short perp** on the same coin. The prediction is funding *persistence*, not direction.
+
+**Data.** Perp 1 h klines + funding from `data/xsec/` (R4). Spot 1 h klines for every coin that was ever
+in the R4 top-40, plus BTC / ETH, from the archive (`data/spot/monthly/klines`, which keeps delisted
+pairs; perp-only coins have no spot and are not hedgeable). 2020-10 → 2026-08.
+
+**Universe, daily at 00:00 UTC:** the R4 point-in-time top-40 perps (same definition) **∩ coins with a
+spot USDT pair** that has complete 1 h data for the prior 30 days and ≥ 2 M USD mean daily spot quote volume.
+
+**Primary strategy `CARRY+` (all parameters fixed now, no tuning):**
+- Signal: FUND7 = mean funding per 8 h over the last 7 days (R4 definition).
+- **Enter** when FUND7 ≥ 0.03 % (3× the 0.01 % default rate); **exit** when FUND7 < 0.01 %, when the coin
+  leaves the eligible set, or on delisting (closed at the last available prices).
+- At most 10 open positions; new entries ranked by FUND7. Each position is 1/10 of capital: spot
+  notional n plus perp margin n / 3 (3× perp leverage), so n = capital / 10 / (4/3).
+- Daily P&L of a position: spot return − perp return (the basis change) + funding received by the short
+  perp at every settlement while open. Costs per side: **spot 7.5 bp, perp 4.5 bp** (VIP0 + BNB, taker),
+  so a round trip costs 24 bp of notional.
+- Idle capital earns 0. Results are reported as return on total capital.
+- Margin stress: count days when the perp's high since entry rises more than 25 % above the entry price
+  (a 3× short needs a top-up from the spot side); report them. P&L is unaffected if topped up.
+
+**Benchmark `BTCETH`:** the same hedge on BTC and ETH, held permanently, 50/50, no signal (the classic
+"cash-and-carry"). **Information arm `CARRY−`:** the mirror (long perp + short spot when FUND7 ≤ −0.03 %),
+**gross of spot borrow cost** (not in the archive); report the break-even borrow rate.
+**Latency control:** everything again with execution at 01:00.
+
+**PASS (`CARRY+`, all required):** annualised net return on capital ≥ 4.5 % (≈ USD risk-free); net
+positive in **every calendar year** 2021–2025 plus 2026 YTD; **worst month > −5 %**; Newey–West t of
+daily net ≥ 2; positive with the 1 h execution lag. Reported but not required: excess over `BTCETH`
+(does the selection add anything?). **Kill:** fail → R5 closed in this form; carry is not a strategy
+here at VIP0 fees.
+
+### Status (2026-10-01) — R5 executed: FAIL
+
+`r5_carry.analysis.md`. `CARRY+` +3.65 %/yr (< 4.5 % risk-free; 2025 −2.65 %, 2026 −0.14 %), low risk
+(worst month −1.4 %) but only 1.05 positions / 17 % of days invested. The BTC/ETH cash-and-carry
+benchmark made +8.77 %/yr but has decayed (2025 3.75 %, 2026 ≈ 1.5 % annualised). `CARRY−` +37 %/yr is
+gross of spot borrow (break-even ~168 %/yr per position), so it is not evidence of an edge.
+Options: carry overlay (forward test), a live borrow-rate check for `CARRY−`, or a programme write-up.

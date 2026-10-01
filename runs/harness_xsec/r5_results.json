@@ -1,0 +1,124 @@
+{
+ "meta": {
+  "start": "2020-10-14",
+  "end": "2026-08-30",
+  "days": 2147,
+  "rf_pct": 4.5,
+  "params": {
+   "enter": 0.0003,
+   "exit": 0.0001,
+   "max_pos": 10,
+   "lev": 3.0,
+   "spot_bp": 7.5,
+   "perp_bp": 4.5,
+   "min_spot_qv": 2000000.0
+  }
+ },
+ "CARRY+": {
+  "ann_pct": 3.653404549757372,
+  "years_pct": {
+   "2020": 2.115536989156726,
+   "2021": 11.972256957956594,
+   "2022": 0.0,
+   "2023": 1.436951145527044,
+   "2024": 8.755441073795247,
+   "2025": -2.6501323549825777,
+   "2026": -0.14002759685281824
+  },
+  "worst_month_pct": -1.3665745172633341,
+  "nw_t": 3.154217523081691,
+  "sharpe": 2.605925774406046,
+  "maxdd_pct": -2.867029611667757,
+  "lag_ann_pct": 3.6202260676992095,
+  "gross_ann_pct": 4.048155364848196,
+  "funding_ann_pct": 4.179529521658129,
+  "basis_ann_pct": -0.13137415680993164,
+  "cost_ann_pct": 0.3947508150908245,
+  "mean_positions": 1.0517000465766186,
+  "days_with_position_pct": 16.907312529110385,
+  "episodes": 129,
+  "mean_hold_days": 17.503875968992247,
+  "coins_used": 86,
+  "margin_stress_episodes": 54,
+  "per_position_ann_pct": 51.32205236686789,
+  "top_coins": {
+   "ADAUSDT": 4,
+   "FTMUSDT": 4,
+   "TIAUSDT": 4,
+   "XLMUSDT": 4,
+   "ATOMUSDT": 3,
+   "ETCUSDT": 3,
+   "ORDIUSDT": 3,
+   "TRBUSDT": 3,
+   "WLDUSDT": 3,
+   "1000SATSUSDT": 2
+  },
+  "excess_vs_btceth_ann_pct": -5.111819764906646,
+  "excess_nw_t": -5.1646669951596476,
+  "pass_detail": {
+   "ann_ge_rf": false,
+   "every_year_pos": false,
+   "worst_month": true,
+   "nw_t": true,
+   "lag_pos": true
+  },
+  "pass": false
+ },
+ "CARRY-": {
+  "ann_pct": 37.32571163382359,
+  "years_pct": {
+   "2020": 1.8674091889422584,
+   "2021": 5.725423641721801,
+   "2022": 36.263830705622944,
+   "2023": 33.64090955952647,
+   "2024": 3.5679720580275647,
+   "2025": 74.8403858272357,
+   "2026": 63.65106320472938
+  },
+  "worst_month_pct": -0.06638599852648856,
+  "nw_t": 5.370248755376795,
+  "sharpe": 3.350407700122648,
+  "maxdd_pct": -0.7173705436285843,
+  "lag_ann_pct": 36.030612186318805,
+  "gross_ann_pct": 38.66449831291069,
+  "funding_ann_pct": 30.29767439427108,
+  "basis_ann_pct": 8.366823918639604,
+  "cost_ann_pct": 1.3387866790870986,
+  "mean_positions": 3.072193758733116,
+  "days_with_position_pct": 80.57755006986493,
+  "episodes": 439,
+  "mean_hold_days": 15.025056947608201,
+  "coins_used": 193,
+  "margin_stress_episodes": null,
+  "per_position_ann_pct": 167.8040789929639,
+  "top_coins": {
+   "BNBUSDT": 17,
+   "WAVESUSDT": 11,
+   "BCHUSDT": 10,
+   "ENAUSDT": 9,
+   "TRUMPUSDT": 9,
+   "CRVUSDT": 8,
+   "TRXUSDT": 8,
+   "APEUSDT": 6,
+   "API3USDT": 6,
+   "AXSUSDT": 6
+  }
+ },
+ "BTCETH": {
+  "ann_pct": 8.765224314664017,
+  "years_pct": {
+   "2020": 4.196001818683611,
+   "2021": 25.4562692562209,
+   "2022": 1.8012375761106596,
+   "2023": 5.950587339601684,
+   "2024": 9.377517239969283,
+   "2025": 3.752001327232599,
+   "2026": 1.0251158629583785
+  },
+  "worst_month_pct": -0.44390221130082747,
+  "nw_t": 8.508339630388706,
+  "sharpe": 9.504148325196892,
+  "maxdd_pct": -0.6067169333284494,
+  "funding_ann_pct": 8.84176875523987
+ }
+}

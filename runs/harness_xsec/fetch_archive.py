@@ -2,12 +2,15 @@
 monthly 1 h klines and monthly funding-rate files, 2020-01 .. END_MONTH. One parquet per symbol.
 
     python fetch_archive.py [--symbols BTCUSDT,ETHUSDT] [--workers 16]
+    python fetch_archive.py --spot --symbols-file ever_in_universe.json      (spot 1 h klines, for R5)
 
 Survivorship-free by construction: the symbol list is the archive's own directory listing, which keeps
 delisted contracts (LUNA, FTT, SRM, ...). Resumable: symbols already written are skipped.
 Output: data/xsec/klines/<SYM>.parquet  (ts, open, high, low, close, quote_volume, taker_buy_quote, trades)
         data/xsec/funding/<SYM>.parquet (ts, rate)        ts = open time / funding time, seconds UTC
         data/xsec/symbols.json          (every archive symbol + which were kept)
+        data/xsec/spot/<SYM>.parquet    (--spot: same kline columns; absent when the coin has no spot pair)
+Spot archive timestamps switch from milliseconds to microseconds in 2025; both are handled.
 """
 import argparse, io, json, os, re, sys, time, zipfile
 import urllib.request, urllib.error
@@ -67,6 +70,44 @@ def month_ok(key):
     return m is not None and START_MONTH <= m.group(1) <= END_MONTH
 
 
+def to_seconds(x):
+    x = pd.to_numeric(x).astype(np.int64)
+    return np.where(x > 10 ** 14, x // 10 ** 6, x // 1000).astype(np.int64)     # us (spot 2025+) or ms
+
+
+def klines_frame(market, sym):
+    keys = [k for k in list_prefix(f"data/{market}/monthly/klines/{sym}/1h/", files=True)
+            if k.endswith(".zip") and month_ok(k)]
+    parts = []
+    for k in sorted(keys):
+        b = get(DL + k)
+        if b is None:
+            continue
+        d = read_zip_csv(b, KCOLS)
+        d = d.rename(columns={"taker_buy_quote_volume": "taker_buy_quote", "count": "trades"})
+        parts.append(d[["open_time", "open", "high", "low", "close", "quote_volume", "taker_buy_quote", "trades"]])
+    if not parts:
+        return None
+    k = pd.concat(parts, ignore_index=True)
+    k["ts"] = to_seconds(k["open_time"])
+    k = k.drop(columns="open_time").drop_duplicates("ts").sort_values("ts")
+    for c in ("open", "high", "low", "close", "quote_volume", "taker_buy_quote"):
+        k[c] = pd.to_numeric(k[c], errors="coerce").astype(np.float64)
+    k["trades"] = pd.to_numeric(k["trades"], errors="coerce").fillna(0).astype(np.int64)
+    return k[["ts", "open", "high", "low", "close", "quote_volume", "taker_buy_quote", "trades"]]
+
+
+def fetch_spot(sym):
+    sp = os.path.join(OUT, "spot", f"{sym}.parquet")
+    if os.path.exists(sp):
+        return sym, "cached", 0
+    k = klines_frame("spot", sym)
+    if k is None:
+        return sym, "no spot", 0
+    k.to_parquet(sp, index=False)
+    return sym, "ok", len(k)
+
+
 def fetch_symbol(sym):
     kp, fp = os.path.join(OUT, "klines", f"{sym}.parquet"), os.path.join(OUT, "funding", f"{sym}.parquet")
     if os.path.exists(kp) and os.path.exists(fp):
@@ -110,7 +151,17 @@ def fetch_symbol(sym):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbols", default=""); ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--spot", action="store_true"); ap.add_argument("--symbols-file", default="")
     a = ap.parse_args()
+    if a.spot:
+        os.makedirs(os.path.join(OUT, "spot"), exist_ok=True)
+        syms = json.load(open(a.symbols_file)) if a.symbols_file else a.symbols.split(",")
+        t0, n_ok = time.time(), 0
+        with ThreadPoolExecutor(a.workers) as ex:
+            for fu in as_completed([ex.submit(fetch_spot, s) for s in syms]):
+                s, st, n = fu.result(); n_ok += st in ("ok", "cached")
+        print(f"spot: {n_ok}/{len(syms)} symbols have spot klines | {time.time() - t0:.0f}s")
+        return
     os.makedirs(os.path.join(OUT, "klines"), exist_ok=True); os.makedirs(os.path.join(OUT, "funding"), exist_ok=True)
     t0 = time.time()
     if a.symbols:
