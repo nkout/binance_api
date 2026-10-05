@@ -547,3 +547,17 @@ BTC 5-minute klines (`data/btcusdt_5m_klines.pkl`, 2019-09 → 2026-09, complete
 (needs 5) → PASS by 0.1–0.4 point margins. Diagnostics: slope +0.77 (t 3.06) in 2021–22 vs +0.19 (t 1.43) in 2023–26; veto-short +8.1 → +0.6 per
 entry day; veto minus always-short −0.15 (CI [−2.1, +2.0]); tail cut (worst 1 % −17 vs −60) but not the May-2021 event. Decision: premise
 not dead, but weak and decaying; forward-score the rule first, then a real option-cost study; the detector probe last.
+
+### V1 forward scoring — pre-registration (2026-10-05, before the code)
+
+The V1 verdict rests on a sample that is now spent (and mostly 2021–22). Forward test of the **frozen** rule: the exact `harness_vrp/vrp.py` pipeline
+(HAR-RV on log RV, expanding OLS refit monthly with a 30-day purge; `IV_t` = DVOL close of day t − 1; position short volatility iff `F_t < IV_t`,
+else flat; 2 vol points friction per active entry). **Forward window = entry days after 2026-08-23** (the last in-sample entry day).
+- **Inputs refreshed 2026-10-05:** BTC 5-minute klines to 2026-10-05 (`runs/harness_v1_feas/fetch_klines.py`), DVOL to 2026-10-05.
+- **Regression check:** re-running the pipeline on entry days ≤ 2026-08-23 must reproduce the V1 numbers exactly (P1 slope, veto-short mean).
+- **Ledger:** `harness_vrp/forward_ledger.csv`, one row per forward entry day: IV, F, naive, position, status (complete = the 30-day window has
+  finished; open = realised-so-far shown), RV, P&L at f = 2 for veto-short and always-short. Rows are committed before their windows complete so
+  the signal is on record before the outcome.
+- **No verdict until ≥ 180 completed forward entry days** (about six independent months, early 2027). Then **PASS iff** veto-short mean at f = 2 is
+  > 0 with a moving-block-bootstrap (block 30) 95 % CI lower bound > 0 **and** the forward P1 slope (HAR) is > 0. Anything earlier is reported as
+  descriptive and n is stated. Rescoring is a rerun of `forward_score.py`; no parameter may change.

@@ -41,6 +41,8 @@ def main():
         if not d:
             t += STEP_MS; continue
         for c in d:
+            if c[0] + 300_000 > now:             # skip the bar still forming; a stale partial bar would be kept on resume
+                continue
             # openTime, o,h,l,c, volume, closeTime, quoteVol, trades, takerBuyBase, ...
             rows.append([c[0] // 1000, float(c[1]), float(c[2]), float(c[3]),
                          float(c[4]), float(c[5]), int(c[8]), float(c[9])])
@@ -52,7 +54,9 @@ def main():
 
     df = pd.DataFrame(rows, columns=['ts', 'open', 'high', 'low', 'close',
                                      'volume', 'trades', 'taker_buy_base'])
-    df = df.drop_duplicates('ts').sort_values('ts').set_index('ts')
+    df = df.drop_duplicates('ts').sort_values('ts')
+    df['ts'] = df['ts'].astype('int64'); df['trades'] = df['trades'].astype('int64')   # resume goes through floats
+    df = df.set_index('ts')
     df.to_pickle(OUT)
     span = (df.index.max() - df.index.min()) / 86400
     exp = span * 288

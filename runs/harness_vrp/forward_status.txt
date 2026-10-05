@@ -1,0 +1,8 @@
+klines to 2026-10-05 20:50:00 UTC | last complete day 2026-10-04 | DVOL to 2026-10-05
+regression check vs vrp_results.json (n 1978, slope +0.4122, veto-short f=2 +3.038): OK
+forward entry days 43 (2026-08-24 -> 2026-10-05): complete 13, open 30
+signal: veto-short active on 0 of 43 days (F < IV); latest 2026-10-05: IV 36.5, HAR F 44.1, position flat
+completed (n 13): mean IV 39.6, mean RV 36.4, VRP +3.3 | veto-short mean f=2 +0.00 (0 active) | always-short mean f=2 +1.25
+forward P1 slope not computed (n 13 < 20)
+open windows (realised so far vs IV): 2026-09-06 IV 39 RV-to-date 35 (29d), 2026-09-07 IV 39 RV-to-date 36 (28d), 2026-09-08 IV 39 RV-to-date 36 (27d), 2026-09-09 IV 40 RV-to-date 36 (26d), 2026-09-10 IV 40 RV-to-date 36 (25d), 2026-09-11 IV 40 RV-to-date 36 (24d), 2026-09-12 IV 37 RV-to-date 36 (23d), 2026-09-13 IV 37 RV-to-date 37 (22d), 2026-09-14 IV 39 RV-to-date 37 (21d), 2026-09-15 IV 39 RV-to-date 37 (20d), 2026-09-16 IV 39 RV-to-date 36 (19d), 2026-09-17 IV 36 RV-to-date 36 (18d), 2026-09-18 IV 34 RV-to-date 36 (17d), 2026-09-19 IV 35 RV-to-date 35 (16d), 2026-09-20 IV 36 RV-to-date 36 (15d), 2026-09-21 IV 36 RV-to-date 36 (14d), 2026-09-22 IV 38 RV-to-date 35 (13d), 2026-09-23 IV 37 RV-to-date 35 (12d), 2026-09-24 IV 36 RV-to-date 34 (11d), 2026-09-25 IV 36 RV-to-date 33 (10d), 2026-09-26 IV 35 RV-to-date 33 (9d), 2026-09-27 IV 35 RV-to-date 34 (8d), 2026-09-28 IV 35 RV-to-date 35 (7d), 2026-09-29 IV 36 RV-to-date 3
+verdict: none until >= 180 completed forward entry days (have 13)
