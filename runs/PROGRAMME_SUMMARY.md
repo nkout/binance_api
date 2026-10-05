@@ -1,8 +1,8 @@
 # Binance research programme — summary (2025-08 → 2026-10)
 
 *Written 2026-10-01 as the programme's closing document; updated 2026-10-05 with Round 4 (§2.4: daily trend-following R6 and the
-hedged low-volatility factor R4b, both FAIL) and closed there. `programme_report.html` is the 2026-10-01 version and does not
-include Round 4. Standalone: start here. Every number below
+hedged low-volatility factor R4b, both FAIL) and 2026-10-06 with two post-close probes (§2.5: the DVOL variance-premium check V1 and the
+borrow-rate check R9). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
 comes from a write-up in `runs/`, listed in §8, and every result there is reproducible from a harness
 or an executed notebook in this repository.*
 
@@ -18,7 +18,9 @@ were strong out of sample but lost money to the right tail of small-coin pumps. 
 paid, funding carry, is a premium you collect rather than predict, and on the hedgeable majors it has
 compressed to roughly the risk-free rate. The last round confirmed the pattern: a BTC trend rule cut drawdown by more than half but
 earned less than holding BTC and missed its pre-registered margin, and a BTC-hedged low-volatility book lost to the alt-vs-BTC bleed.
-**No tested strategy beat cash after costs.**
+Two post-close probes left small residuals rather than strategies: a volatility-premium rule that passed its gates narrowly on a 2021–22
+sample (and is flat since), and a negative-funding carry that survives today's borrow rates but is capped by borrow limits at a few thousand
+dollars per coin. **No tested strategy beat cash after costs at a scale and with evidence that held up outside the early sample.**
 
 ---
 
@@ -73,7 +75,7 @@ Point-in-time top-40 perps, six factors × three holding periods, signs fixed on
   average, invested 17 % of days, because most funding-rich coins are perp-only.
 - **Permanent BTC + ETH cash-and-carry:** +8.77 %/yr over 2020-10 → 2026-08, but **25.5 % in 2021,
   then 1.8, 6.0, 9.4, 3.8 %, and ~1.5 % annualised in 2026**. Competed away to about the risk-free rate.
-- **Negative-funding mirror** (+37 %/yr) is **gross of spot borrow**. R9 (2026-10-06) re-priced it at today's borrow rates: +18.9 %/yr on the coins borrowable today,
+- **Negative-funding mirror** (+37 %/yr) is **gross of spot borrow**. R9 (2026-10-06, §2.5) re-priced it at today's borrow rates: +18.9 %/yr on the coins borrowable today,
   capacity-bound, history of borrow rates still unknown (§5).
 
 ### 2.4 Round 4: daily trend-following (R6) and hedged low volatility (R4b)
@@ -94,6 +96,24 @@ fixed parameters, tested on synthetic worlds first, and failed.
   The top-40 re-run (information) is +4.1 bp/day, t 0.8.
 - **Reading.** Trend-following here is a risk-control result, in line with the volatility detector and vol targeting being the
   robust assets of the programme. The low-volatility effect is real as a rank signal and not harvestable as a hedged long-only tilt.
+
+### 2.5 Post-close probes (2026-10-06): the DVOL variance premium (V1) and the borrow-rate check (R9)
+
+Both were cheap tests of premises the closing write-up had left open; both pre-registered before the code.
+
+- **V1, is 30-day realised BTC volatility predictably different from Deribit DVOL?** (`vrp_dvol.analysis.md`; spec `vol_monetisation_probe.plan.md`, which proposed
+  monetising the volatility detector with options). 1,978 entry days 2021-03 → 2026-08, HAR-RV forecast refit monthly, ~66 independent months. **Variance premium +5.2 vol
+  points (NW t 3.25).** P1: the HAR forecast carries information the market lacks (slope +0.41, t 3.18; the naive trailing-RV forecast −0.02). P2: short volatility only
+  when the forecast is below implied earns +3.04 vol points per entry day at an assumed 2-point friction (CI +1.46 … +4.78), 5 of 6 calendar years positive (needs 5).
+  **Both pre-registered gates pass, by minimum margins, and the evidence is old:** slope +0.77 (t 3.06) in 2021–22 vs +0.19 (t 1.43) in 2023–26; the rule earns +8.1 per
+  entry day in 2021–22 and +0.6 since; it does not beat always-short in mean (−0.15, CI −2.1 … +2.0); the proxy omits delta-hedge cost and the convex tail (worst variance-payoff
+  entry −128 vega points). Same decay shape as funding carry. A forward test of the frozen rule is running as a ledger (`harness_vrp/forward_score.py`, `forward_ledger.csv`;
+  verdict only at ≥ 180 completed forward entry days, about early 2027). First run: 43 forward days, 13 complete, the rule flat on all (HAR forecast 44 > implied 36.5).
+- **R9, does spot borrow absorb the +37 %/yr `CARRY−`?** (`r9_borrow.analysis.md`; no API key, so today's public VIP0 borrow rates, current only). **The prior was wrong:** on coins
+  borrowable today, `CARRY−` nets +18.9 %/yr at today's rates (R5 gross 37.3, borrowable-only 26.7), Sharpe 3.8, max drawdown −1.5 %, break-even at 2.8× today's rates. By the registered
+  bars it is still DEAD: every VIP0 borrow limit is $1.5k–5.6k per coin (needed ≥ 3 coins at ≥ $50k) and 2024 is −0.51 % (needed every year 2021–2025 positive). It is a small-account,
+  capacity-bound carry resting on today's rates, which probably flatter the history (borrow demand spikes in squeezes; delisted coins excluded). A snapshot script
+  (`harness_xsec/snapshot_borrow.py`) builds a rate history when run (manually; the cron schedule was removed because the machine is not always on).
 
 ## 3. Why: the arithmetic that kept recurring
 
@@ -123,6 +143,8 @@ fixed parameters, tested on synthetic worlds first, and failed.
 | funding carry | positive in every year on BTC/ETH; compressed to ~risk-free | `r5_carry.analysis.md` |
 | BTC trend + vol targeting | drawdown −33 % vs −79 % at Sharpe 0.92 vs 0.69; a risk reducer, not a return source | `r6_trend.analysis.md` |
 | low-vol selection among alts | +3.4 bp/day over a hedged alt basket, t 1.1 (insignificant) | `r4b_lowvol.analysis.md` |
+| BTC variance risk premium | implied above realised by 5.2 vol points (t 3.25); HAR beats the market's price in 2021–22, not clearly since | `vrp_dvol.analysis.md` |
+| negative-funding carry net of today's borrow | +18.9 %/yr on borrowable coins, break-even 2.8× rates; capped by $1.5k–5.6k borrow limits | `r9_borrow.analysis.md` |
 
 These are the right inputs for **sizing, risk control or quote management** if a base strategy with
 its own edge ever exists. The volatility detector is the most robust asset the programme produced.
@@ -138,14 +160,15 @@ Each of these changes the economics rather than the model:
 - **Cheap spot borrow** on negative-funding coins. **R9 was run 2026-10-06** (`r9_borrow.analysis.md`, today's public VIP0 borrow rates; history needs a key): borrow does **not**
   absorb the gross. `CARRY−` on currently-borrowable coins at today's rates nets +18.9 %/yr (break-even at 2.8× today's rates), but it is capacity-bound (VIP0 borrow limits $1.5k–5.6k per coin)
   and failed the registered bars on capacity and one year (2024 −0.51 %).
-- **Other instruments.** Options (selling volatility with the detector as a veto, idea 1b) were never
-  tested: no implied-volatility history was collected.
+- **Other instruments.** Options: V1 tested only the premise (DVOL vs realised, frictionless proxy) and found a premium that has faded. A real option book (spreads, delta-hedge cost, the
+  convex tail) and the detector probe in `vol_monetisation_probe.plan.md` are not done; the suggested order is the forward ledger first, a real option-cost study second, the detector last.
 - **Forward tests.** The historical samples are spent. The long-only trend variant (R6 `A_long`) and the low-vol tilt (R4b) are
-  hypotheses to score on data after 2026-08, which needs the collector (or a paper-trading logger) running again.
+  hypotheses to score on data after 2026-08, which needs the collector (or a paper-trading logger) running again. The V1 rule has a forward ledger already
+  (`harness_vrp/`), and a borrow-rate history can accrue from `snapshot_borrow.py` runs.
 
 ## 6. Method lessons (what actually caught errors)
 
-Ranked by how often they changed a conclusion:
+Ranked by how often they changed a conclusion (1–7 and 12; 8–11 were added after the later rounds):
 1. **Sample length.** The 4 h strategy passed every structural control on one year and was an
    artifact over seven. Short samples produced several "significant" cells that did not replicate.
 2. **One-position, non-overlapping P&L.** Caught a 9.4× inflation that no other control saw.
@@ -162,7 +185,11 @@ Ranked by how often they changed a conclusion:
 9. **Check the null before the real run.** A permutation null that redraws a random quintile daily pays far more turnover than a
    persistent rank, which biased a net-mean null; planted-signal and null worlds exposed it on synthetic data, and the fix was
    recorded before any real-data number existed. A plain-pandas re-derivation of R6 matched the harness exactly.
-10. **Rank IC ≠ P&L.** Strong IC with negative P&L appeared at 90 s (volatility artifact) and in the
+10. **Stratify a narrow pass by period.** V1 passed both gates, and only the split by period (slope t 3.06 in 2021–22, 1.43 afterwards; +8.1 → +0.6 per entry day) showed that the
+    evidence was old. A pass at the minimum margin is a prompt for that check, not a result.
+11. **Written priors can be wrong, and a bar set in advance can decide the verdict.** R9's stated expectation (borrow absorbs the gross) was falsified, while the registered capacity bar ($50k)
+    and the every-year bar still returned DEAD. Both facts are reported; the bars were not changed after the numbers.
+12. **Rank IC ≠ P&L.** Strong IC with negative P&L appeared at 90 s (volatility artifact) and in the
    cross-section (skew). Always report median vs mean and the worst 1 % of days.
 
 ## 7. Reproducing
@@ -173,7 +200,9 @@ Ranked by how often they changed a conclusion:
   overwrite executed notebooks); each has a `test_notebook.py` with a SMOKE execution.
 - Cross-sectional, carry, trend and low-vol studies run locally in about a minute: `runs/harness_xsec/run_r4.py`,
   `run_r5.py`, `run_r6.py`, `run_r4b.py` (data: `fetch_archive.py`, ~45 min, resumable); each has a `test_*.py`
-  (xsec 20, carry 15, trend 29, lowvol 24 checks).
+  (xsec 20, carry 15, trend 29, lowvol 24 checks). R9: `r9_borrow.py` (+ `test_r9.py`, 13) and `snapshot_borrow.py` (+ `test_snapshot.py`, 9).
+- V1: `runs/harness_vrp/` (`fetch_dvol.py`, `run_vrp.py`, `diag_vrp.py`, `forward_score.py`, `test_vrp.py` 26 checks). Refresh the forward ledger with
+  `runs/harness_v1_feas/fetch_klines.py`, `fetch_dvol.py`, then `forward_score.py`.
 - Large data stays out of git (`.gitignore`: `data/`, `*.npz`, `*.pkl`, `*.tar`).
 
 ## 8. Document index
@@ -187,5 +216,6 @@ Ranked by how often they changed a conclusion:
 | fees | `fee_reprice.analysis.md` |
 | cross-section and carry | `r4_xsec.analysis.md`, `r5_carry.analysis.md`, `r9_borrow.analysis.md` |
 | trend and hedged low volatility (Round 4) | `r6_trend.analysis.md`, `r4b_lowvol.analysis.md` |
+| volatility premium and borrow (post-close) | `vrp_dvol.analysis.md`, `vol_monetisation_probe.plan.md` (spec, not implemented), `harness_vrp/forward_ledger.csv`, `r9_borrow.analysis.md` |
 | ideas, pre-registrations, status | `next_signal_ideas.md` (Rounds 1–5, R1–R6, R4b, R9, V1, W1) |
 | untested designs | `run014.plan.md` (marked superseded 2026-10-05), `features.explanation.run.013.md`, `btc_lstm.run.012.md` |
