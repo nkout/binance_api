@@ -592,3 +592,10 @@ re-pricing of the R5 `CARRY−` sample at **today's** rates, which is a proxy fo
 with ≥ $50k) → DEAD. S2: R5 `CARRY−` on currently-borrowable coins at today's rates +18.9 %/yr (gross of borrow on those coins +26.7, R5 original +37.3), Sharpe 3.8, max DD −1.5 %,
 but 2024 −0.51 % → DEAD on "every year 2021–2025 positive". Break-even at 2.83× today's rates: borrow does **not** absorb the gross, contrary to the prior. Capacity-bound (small account) and
 rests on today's rates; the signed history (read-only key) is still open. `r9_borrow_snapshot.json` starts a borrow-rate history.
+
+### R9 follow-up — daily borrow snapshots (built 2026-10-06; cron schedule removed by the user the same day: the machine is not always on)
+
+`harness_xsec/snapshot_borrow.py` (tests `test_snapshot.py` 9/9, network mocked) stores one `data/borrow_history/borrow_YYYY-MM-DD.json.gz` per UTC day: VIP0 borrow rate and limit for every
+cross-margin asset, mark price and last funding rate for every USDT perp, and the S1 candidates with FUND7. Run it by hand (or from an always-on host) whenever possible: the first success of each UTC day is kept, later runs that day skip without
+fetching, failures exit 1 and write nothing; log `data/borrow_history/snapshot.log`. Gaps are tolerable for the purpose but shrink the sample. About 15 KB a day. `data/` is not in git. Use: after ~90 days, re-price
+`CARRY−` on the live candidates with the rates actually paid, and forward-score it; until then the R9 verdict stands as registered.
