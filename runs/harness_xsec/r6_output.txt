@@ -1,0 +1,41 @@
+panels: 857 symbols, 2434 days | 43s
+BTC arms done | 44s
+XS arms done | 51s
+
+===== BTC (1A / 1B): 2020-05-01 -> 2026-08-30 (2313 d) =====
+  A        net  +31.83 %/yr (CAGR  +29.58) | Sharpe  0.92 | vol  34.6 % | maxDD   -33.3 % | skew +1.03 | worst day   -9.7 % | exposure 0.57 | turnover  38.9/yr | cost 1.75 %/yr | beats cash 4/7 | lag-1d +21.36 %/yr
+      2020 +128.3%  2021 +4.3%  2022 -4.0%  2023 +52.5%  2024 +34.7%  2025 -6.0%  2026 +17.0%
+  A_long   net  +32.25 %/yr (CAGR  +33.33) | Sharpe  1.21 | vol  26.6 % | maxDD   -22.8 % | skew +1.85 | worst day   -9.7 % | exposure 0.34 | turnover  20.2/yr | cost 0.91 %/yr | beats cash 5/7 | lag-1d +26.37 %/yr
+      2020 +141.3%  2021 +10.9%  2022 -9.9%  2023 +64.3%  2024 +56.2%  2025 -5.1%  2026 +5.4%
+  B        net  +32.02 %/yr (CAGR  +24.46) | Sharpe  0.71 | vol  45.1 % | maxDD   -65.8 % | skew +0.19 | worst day  -14.2 % | exposure 0.85 | turnover   5.7/yr | cost 0.26 %/yr | beats cash 4/7 | lag-1d +32.70 %/yr
+      2020 +169.5%  2021 +7.1%  2022 -54.8%  2023 +124.4%  2024 +92.4%  2025 -14.1%  2026 -17.3%
+  BH       net  +39.62 %/yr (CAGR  +26.15) | Sharpe  0.69 | vol  57.3 % | maxDD   -78.9 % | skew +0.14 | worst day  -15.4 % | exposure 1.00 | turnover   0.2/yr | cost 0.01 %/yr | beats cash 4/7 | lag-1d +39.25 %/yr
+      2020 +199.7%  2021 +17.7%  2022 -65.7%  2023 +136.5%  2024 +96.3%  2025 -11.0%  2026 -12.9%
+  shift null: actual percentile 97.9 (null median Sharpe -0.02, p97.5 0.90, n 2000)
+  sharpe_diff_vs_bh_ci: [-0.6744147207649172, 1.223360627360101]
+  A leg split (ann %): {'long': 33.156799575384866, 'short': 0.4289484632756142}
+    FAIL sharpe_vs_ref: 0.92 vs 0.69 + 0.3
+    OK   maxdd_half: -33.3 % vs 0.5 x -78.9 %
+    FAIL years_beat_cash: 4 of 7 (need 5)
+    OK   shift_null: 97.9 th percentile
+    OK   lag1_positive: +21.36 %/yr
+  VERDICT: FAIL
+
+===== per-coin top-40 (1C): 2021-02-11 -> 2026-08-30 (2027 d) =====
+  C1       net   +8.73 %/yr (CAGR   +3.73) | Sharpe  0.28 | vol  31.5 % | maxDD   -50.9 % | skew -1.88 | worst day  -22.9 % | exposure 0.29 | turnover  26.2/yr | cost 1.18 %/yr | beats cash 3/6 | lag-1d +10.64 %/yr
+      2021 +11.9%  2022 -26.3%  2023 +42.7%  2024 +25.4%  2025 -16.9%  2026 -0.1%
+  C1_ls    net   +8.06 %/yr (CAGR   -1.69) | Sharpe  0.18 | vol  44.0 % | maxDD   -60.9 % | skew -0.37 | worst day  -22.3 % | exposure 0.63 | turnover  54.1/yr | cost 2.43 %/yr | beats cash 2/6 | lag-1d +7.05 %/yr
+      2021 -13.3%  2022 -10.5%  2023 +13.4%  2024 +6.3%  2025 -5.6%  2026 +3.0%
+  IV_long  net   +3.45 %/yr (CAGR  -22.98) | Sharpe  0.05 | vol  76.1 % | maxDD   -89.7 % | skew -0.48 | worst day  -31.5 % | exposure 0.95 | turnover  19.6/yr | cost 0.88 %/yr | beats cash 3/6 | lag-1d +4.59 %/yr
+      2021 +36.2%  2022 -79.6%  2023 +105.6%  2024 +7.6%  2025 -54.1%  2026 -17.0%
+  EW       net   +5.21 %/yr (CAGR  -27.62) | Sharpe  0.06 | vol  85.8 % | maxDD   -93.2 % | skew -0.36 | worst day  -35.6 % | exposure 1.00 | turnover  12.4/yr | cost 0.56 %/yr | beats cash 2/6 | lag-1d +9.44 %/yr
+      2021 +32.9%  2022 -83.7%  2023 +123.9%  2024 -4.0%  2025 -61.2%  2026 -8.2%
+  shift null: actual percentile 76.2 (null median Sharpe 0.12, p97.5 0.58, n 500)
+  sharpe_diff_vs_iv_ci: [-0.3570725378076682, 0.812153790039873]
+  sharpe_diff_vs_ew_ci: [-0.4198194650679832, 0.845544890148924]
+    FAIL sharpe_vs_ref: 0.28 vs 0.05 + 0.3
+    FAIL maxdd_half: -50.9 % vs 0.5 x -89.7 %
+    FAIL years_beat_cash: 3 of 6 (need 5)
+    FAIL shift_null: 76.2 th percentile
+    OK   lag1_positive: +10.64 %/yr
+  VERDICT: FAIL

@@ -351,3 +351,145 @@ here at VIP0 fees.
 benchmark made +8.77 %/yr but has decayed (2025 3.75 %, 2026 ≈ 1.5 % annualised). `CARRY−` +37 %/yr is
 gross of spot borrow (break-even ~168 %/yr per position), so it is not evidence of an edge.
 Options: carry overlay (forward test), a live borrow-rate check for `CARRY−`, or a programme write-up.
+
+---
+
+## Round 4 — after the programme summary (2026-10-05)
+
+Context: `PROGRAMME_SUMMARY.md`. Every tested edge was too small for the 9 bp fee, killed by a left-skewed
+payoff, or a premium that has been competed away. Round 4 targets the second and third failures with
+data already on disk. Run order **R6 → R9 → R4b**.
+
+**Not pursued, and why.** Finer bars (1–2 s): R1 already answered this. The linear 1 s estimate was
++4.2 bp < 9 (`latency_decay_probe.analysis.md`), the 5 s oracle makes only 1.15 bp, and the binding
+constraint is execution latency, not bar size. More BTC direction work: closed four ways. R2 (fade RV
+spikes): prior near zero after the martingale continuation result. R8 (event studies): n too small.
+Deferred: R7 (options with detector veto, needs Deribit data) and market making on mid-cap alts
+(spreads 5–20 bp > fee; needs the event-stream collector pointed at alts).
+
+**Fresh data.** The historical samples are spent on the hypotheses tested so far. Restart the
+collector (or a paper-trading logger) for forward tests regardless of which idea is chosen.
+
+### R6 — daily trend-following + volatility targeting — pre-registration (before the code)
+
+Why: trend-following is the one structure with a right-skewed payoff, the opposite of what sank the
+90 s book, 4 h mean reversion and the R4 short legs. Daily turnover makes 4.5 bp per side nearly
+irrelevant.
+
+**Data:** `data/btcusdt_5m_klines.pkl` (BTC perp 5 min, 2019-09 → 2026-09) resampled to daily at
+00:00 UTC; `data/xsec/` (860 perps, 1 h klines + funding, incl. delisted).
+
+| arm | rule (all parameters fixed) |
+|---|---|
+| **1A BTC trend (primary)** | signal = mean of sign(trailing return) over 20 / 60 / 120 d ∈ [−1, +1]; position = signal × 40 %/yr ÷ trailing 30-day realised vol, capped at 2× leverage; rebalance daily at 00:00 UTC, only when the target position changes by > 10 % |
+| 1B vol-targeted BTC hold | same sizing, signal ≡ +1 (sizing tool, not alpha) |
+| 1C per-coin trend | R4 point-in-time top-40; each coin the 1A rule, **long / flat** only, inverse-vol weights |
+| info | 1A long / short and 1C long / short |
+
+**Accounting:** perp funding as real P&L; cost 4.5 bp per side × turnover (VIP0 + BNB taker); 1-day
+execution lag row. **Benchmarks:** buy-and-hold BTC, equal-weight top-40 long, cash at 4.5 %/yr.
+**Metrics:** annualised net, Sharpe, max DD, skew, per-year table, turnover, long / short split.
+
+**PASS (1A, all required):**
+- net Sharpe ≥ buy-and-hold Sharpe + 0.3
+- max DD ≤ ½ of buy-and-hold's
+- beats cash in ≥ 5 of 7 years
+- block bootstrap (random signals with the same turnover) percentile ≥ 97.5
+- positive with the 1-day lag
+
+**Kill:** fail → the trend premium is not present here or is competed away. 1B and 1C are reported,
+and a 1C pass is a hypothesis for a forward test, not a result. Caveat: 7 years hold only a few
+independent trend episodes, so power is low. Local CPU, about half a day.
+
+### R9 — `CARRY−` borrow-rate check
+
+Question: R5's `CARRY−` (long perp / short spot on negative funding) made +37 %/yr **gross of spot
+borrow**, with a per-position break-even borrow rate of ~168 %/yr. Does the borrow cost absorb it, or
+is the coin not borrowable at all?
+
+**Data (needs a Binance API key with read-only permissions, exported as an environment variable;
+never written to the repo):** `GET /sapi/v1/margin/interestRateHistory` (history per asset; depth to be
+verified), `GET /sapi/v1/margin/crossMarginData` (current rates and limits),
+`GET /sapi/v1/margin/maxBorrowable` (current availability).
+
+**Steps:**
+1. **Snapshot:** every coin with FUND7 ≤ −0.03 % per 8 h today: annualised funding received vs the
+   current borrow rate, and whether it is borrowable (and how much).
+2. **History:** pull the rate history as far back as the API allows; recompute `CARRY−` net of borrow
+   over that window, using the R5 code and costs.
+
+**Kill:** net of borrow < risk-free over the available window, **or** most entry-day coins are not
+borrowable. Prior: dead (negative funding is the price of a scarce short). 30 min – 2 h.
+
+### R4b — low-volatility factor with a bounded tail — pre-registration (before the code)
+
+Why: the strongest OOS signal in the programme is low vol beating high vol (RVOL30 IC −0.099,
+t −14.7). R4 lost money only because the short leg held volatile small coins that pumped +150–500 %.
+Keep the signal; remove the short tail.
+
+**Primary construction (one, no grid):**
+- daily rebalance at 00:00 UTC; long the bottom RVOL30 quintile, inverse-vol weighted, ≤ 20 % per coin
+- **hedge with a short BTC perp** sized to the long book's trailing 60-day beta (the only short is BTC)
+- H ∈ {1, 7} days with staggered sub-books (as R4); funding as P&L; 4.5 bp per side; 1 h entry-lag row
+
+**Key control:** the identical beta-hedged construction on an **equal-weight** long of the same
+universe. Without it the arm could just be "alts vs BTC". The factor return is primary minus control.
+**Info arm:** long low vol / short high vol, inverse-vol weights, short side ≤ 2.5 % per coin.
+
+**Samples (R4's OOS period has been seen):**
+1. **Primary: disjoint universe, volume ranks 41–100**, point in time, 2020-10 → 2026-08. A
+   cross-sectional replication; not independent in time, since it is the same market.
+2. Top-40 re-run: information only.
+3. Forward from 2026-09: accumulates.
+
+**PASS (primary, Holm across its cells, all required):**
+- net > 0 with Newey–West t ≥ 2
+- beats the beta-hedged equal-weight control
+- positive in ≥ 3 of 4 years
+- permutation percentile ≥ 97.5
+- positive with the 1 h lag
+- median and mean daily return have the same sign (the R4 lesson)
+
+**Kill:** fail → low vol is real but not harvestable without shorting lottery coins. Reuses
+`harness_xsec`; check archive coverage for ranks 41–100 first. Local CPU, about a day.
+
+
+### Status (2026-10-05) — R6 executed: FAIL (narrowly)
+
+`r6_trend.analysis.md`. 1A (BTC trend, long / short): Sharpe 0.92 vs buy-and-hold 0.69 (needs +0.30), max DD −33 % vs
+−79 %, shift-null 97.9th pct, lag-1d +21 %/yr, but beats cash in 4 of 7 years (needs 5) and nets less than
+buy-and-hold (+31.8 vs +39.6 %/yr); Sharpe-difference CI [−0.67, +1.22]. All gain is the long side (short leg +0.4 %/yr).
+1C (per-coin, long / flat) fails 4 of 5 (shift-null 76th pct). Information arm `A_long` (Sharpe 1.21, 5 / 7 years) was
+not pre-registered as primary: a forward-test hypothesis only. Next: R9, then R4b.
+
+### R4b — implementation details fixed before the code (2026-10-05)
+
+The R4b pre-registration above left these open; they are fixed here, before any R4b number has been computed.
+
+- **Universe:** the R4 point-in-time eligibility (listed ≥ 60 d, complete 30-day 1 h data, not stable / index), ranked by
+  trailing 30-day quote volume; **primary = ranks 41–100** (60 coins, quintile 12); BTC is excluded from every universe
+  (it is the hedge). Study starts on the first day with ≥ 100 eligible coins.
+- **Factor:** RVOL30 as in R4 (std of 1 h log returns over 30 d). Long = the lowest-RVOL quintile (12 coins), ranked only
+  when ≥ 90 % of the universe has a value.
+- **Weights:** ∝ 1 / RVOL30 inside the quintile, normalised to 1, capped at 0.20 per coin with the excess redistributed.
+- **Beta hedge:** short BTC perp, notional = β on day d, where β is the OLS slope of the alt book's daily total return
+  (price + funding, net of any short leg) on BTC's daily total return over days d − 60 … d − 1; needs 60 days of book
+  history, otherwise no position. Staggered H = 1 and 7: the book is the mean of the last H days' target weights.
+- **Cost:** 4.5 bp per side on the turnover of the whole book including the BTC hedge. **1 h lag row:** same weights,
+  returns measured from 01:00. Return is on the long notional (long book = 1; hedge is extra gross).
+- **Control:** equal-weight long of the *whole* ranks 41–100 universe with the identical hedge. Factor return = primary − control.
+- **Info arm:** long low-vol as primary, short the highest-RVOL quintile inverse-vol weighted with total gross 0.30 and ≤ 0.025
+  per coin, BTC hedge on the net book. Top-40 (ranks 1–40) re-run of the primary construction, information only.
+- **Pass criteria, per cell (H ∈ {1, 7}), all required:** net mean > 0 with Newey–West t ≥ 2 **and** Holm-adjusted one-sided
+  p < 0.05 across the two cells; primary − control daily difference has NW t ≥ 2; positive in ≥ 75 % of the consecutive
+  365-day blocks; random-quintile permutation percentile (same construction, 300 draws) of the **gross** mean ≥ 97.5 *(corrected during testing, before any real-data run: a quintile redrawn at random every day pays far more turnover than a persistent rank, so a net-mean null is biased against the null; net > 0 is tested separately)*; net mean
+  > 0 with the 1 h lag; median and mean daily return of the same sign. The study passes if any cell passes.
+- **Forward test:** the archive ends 2026-08-30, so a post-2026-08 test is not possible yet; it accumulates from the collector.
+
+### Status (2026-10-05) — R4b executed: FAIL
+
+`r4b_lowvol.analysis.md`. Ranks 41–100, 1,864 days from 2021-07: primary (long low-RVOL30 quintile, inverse-vol, BTC short
+sized to 60-day beta) nets −6.0 bp/day (NW t −1.18) at H = 1, −5.7 at H = 7; 0–1 of 5 blocks positive; negative with the lag.
+The beta-hedged equal-weight control loses −9.4 bp/day (alts bleed vs BTC); primary − control +3.4 bp/day (t 1.09), the right
+sign but not significant. Top-40 re-run (info) +4.1 bp/day, t 0.81. Round 4 remaining: R9 (borrow-rate check, needs a
+read-only API key).

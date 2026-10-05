@@ -1,20 +1,24 @@
 # Binance research programme — summary (2025-08 → 2026-10)
 
-*Written 2026-10-01 as the programme's closing document. Standalone: start here. Every number below
+*Written 2026-10-01 as the programme's closing document; updated 2026-10-05 with Round 4 (§2.4: daily trend-following R6 and the
+hedged low-volatility factor R4b, both FAIL) and closed there. `programme_report.html` is the 2026-10-01 version and does not
+include Round 4. Standalone: start here. Every number below
 comes from a write-up in `runs/`, listed in §8, and every result there is reproducible from a harness
 or an executed notebook in this repository.*
 
 ## The verdict in one paragraph
 
 Over roughly 14 months the programme built a data collector, a year of unique order-book and
-positioning data, and ~30 pre-registered experiments across three return sources: **BTC direction**
+positioning data, and ~30 pre-registered experiments across four return sources: **BTC direction**
 (5 s to 4 h, LSTM / GBM / MLP / CNN, engineered and raw inputs), **cross-sectional perp factors**
-(860 contracts, survivorship-free) and **funding carry** (delta-neutral). The finding is consistent:
+(860 contracts, survivorship-free) **funding carry** (delta-neutral) and, in a last round, **daily trend-following** and a **beta-hedged low-volatility factor**. The finding is consistent:
 **the signals are real and the edges are not tradeable at a retail fee tier.** Every direction signal
 was either smaller than the 9 bp round trip or gone within seconds. The cross-sectional rank effects
 were strong out of sample but lost money to the right tail of small-coin pumps. The one source that
 paid, funding carry, is a premium you collect rather than predict, and on the hedgeable majors it has
-compressed to roughly the risk-free rate. **No tested strategy beat cash after costs.**
+compressed to roughly the risk-free rate. The last round confirmed the pattern: a BTC trend rule cut drawdown by more than half but
+earned less than holding BTC and missed its pre-registered margin, and a BTC-hedged low-volatility book lost to the alt-vs-BTC bleed.
+**No tested strategy beat cash after costs.**
 
 ---
 
@@ -31,7 +35,7 @@ compressed to roughly the risk-free rate. **No tested strategy beat cash after c
 
 The collector data were verified against Binance's own candles to ~0.01 bp (`ALL_RUNS_ANALYSIS.md`).
 
-## 2. The three branches and what closed each
+## 2. The branches and what closed each
 
 ### 2.1 BTC direction (runs 001–014, probes 1a / 1d / R1 / MLP / W1 / continuation)
 
@@ -72,6 +76,25 @@ Point-in-time top-40 perps, six factors × three holding periods, signs fixed on
 - **Negative-funding mirror** (+37 %/yr) is **gross of spot borrow**. Negative funding is largely the
   price of a scarce short, so the borrow cost is expected to absorb it; it could not be tested.
 
+### 2.4 Round 4: daily trend-following (R6) and hedged low volatility (R4b)
+
+Both target the failures above (left-skewed payoffs, the short-leg pump tail) with data already on disk; both pre-registered with
+fixed parameters, tested on synthetic worlds first, and failed.
+
+- **R6, trend-following + volatility targeting** (`r6_trend.analysis.md`). BTC, 20 / 60 / 120-day sign ensemble, 40 % vol target,
+  2020-05 … 2026-08 window of 2,313 days. **Net Sharpe 0.92 vs buy-and-hold 0.69** (needs +0.30; got +0.23), max drawdown −33 % vs
+  −79 %, beats cash in 4 of 7 years (needs 5), shift-null 97.9th percentile, +21 %/yr with a one-day lag, but **nets less than
+  holding BTC** (+31.8 vs +39.6 %/yr). The Sharpe-difference CI is [−0.67, +1.22]; the short leg earned +0.4 %/yr, so all the gain is
+  being flat through 2022. A per-coin long / flat version (top-40) fails four of five criteria. The long-only variant (Sharpe 1.21)
+  was an information arm and is a forward-test hypothesis only.
+- **R4b, low-volatility long, BTC-beta hedged** (`r4b_lowvol.analysis.md`). Volume ranks 41–100 (a universe R4 never used),
+  1,864 days from 2021-07. Long the lowest-RVOL30 quintile, inverse-vol weights, short BTC sized to the trailing 60-day beta:
+  **−6.0 bp/day (−22 %/yr), NW t −1.18**; 0–1 of 5 yearly blocks positive; negative with the 1 h lag. The hedged equal-weight control
+  loses −9.4 bp/day (alts bleed against BTC), so the low-vol selection adds **+3.4 bp/day (t 1.1)**: right sign, not significant.
+  The top-40 re-run (information) is +4.1 bp/day, t 0.8.
+- **Reading.** Trend-following here is a risk-control result, in line with the volatility detector and vol targeting being the
+  robust assets of the programme. The low-volatility effect is real as a rank signal and not harvestable as a hedged long-only tilt.
+
 ## 3. Why: the arithmetic that kept recurring
 
 1. **Fees vs move size.** The reachable tier at this volume is VIP0 + BNB: **9.0 bp taker round trip**,
@@ -98,6 +121,8 @@ Point-in-time top-40 perps, six factors × three holding periods, signs fixed on
 | 4 h range position | IC −0.34, stationary over 7 years | `v1_4h_feasibility…` |
 | cross-sectional low-vol and reversal | IC −0.099 (t −14.7) and −0.02 (t −3 to −4) OOS | `r4_xsec.analysis.md` |
 | funding carry | positive in every year on BTC/ETH; compressed to ~risk-free | `r5_carry.analysis.md` |
+| BTC trend + vol targeting | drawdown −33 % vs −79 % at Sharpe 0.92 vs 0.69; a risk reducer, not a return source | `r6_trend.analysis.md` |
+| low-vol selection among alts | +3.4 bp/day over a hedged alt basket, t 1.1 (insignificant) | `r4b_lowvol.analysis.md` |
 
 These are the right inputs for **sizing, risk control or quote management** if a base strategy with
 its own edge ever exists. The volatility detector is the most robust asset the programme produced.
@@ -110,9 +135,12 @@ Each of these changes the economics rather than the model:
   The untested `run.013` price-level panel (maker fill timing) is the one experiment aimed at that.
 - **Co-located, sub-second execution.** The big-move tail is worth +11–14 bp at zero delay. A venue
   and infrastructure that act within ~100 ms could capture part of it. That is a different business.
-- **Cheap spot borrow** on negative-funding coins (a live borrow-rate check is the cheap first step).
+- **Cheap spot borrow** on negative-funding coins (R9: a live borrow-rate check, **not run**; it needs a read-only API key, and the
+  prior is that the borrow cost absorbs the +37 %/yr gross).
 - **Other instruments.** Options (selling volatility with the detector as a veto, idea 1b) were never
   tested: no implied-volatility history was collected.
+- **Forward tests.** The historical samples are spent. The long-only trend variant (R6 `A_long`) and the low-vol tilt (R4b) are
+  hypotheses to score on data after 2026-08, which needs the collector (or a paper-trading logger) running again.
 
 ## 6. Method lessons (what actually caught errors)
 
@@ -128,7 +156,12 @@ Ranked by how often they changed a conclusion:
 7. **Tests that execute the artifact.** Three defect classes shipped past green suites that tested
    proxies; later harnesses use equivalence tests, leak tests (scramble the future), planted-signal
    worlds and null worlds. Two verdict-cell bugs were caught only by re-deriving results from saved data.
-8. **Rank IC ≠ P&L.** Strong IC with negative P&L appeared at 90 s (volatility artifact) and in the
+8. **A control that nets out the dominant term.** R4b's beta-hedged equal-weight control (−9.4 bp/day) showed the book's loss was the
+   alt-vs-BTC bleed, and that the factor's real contribution was +3.4 bp/day. Without it a hedged long-only result is uninterpretable.
+9. **Check the null before the real run.** A permutation null that redraws a random quintile daily pays far more turnover than a
+   persistent rank, which biased a net-mean null; planted-signal and null worlds exposed it on synthetic data, and the fix was
+   recorded before any real-data number existed. A plain-pandas re-derivation of R6 matched the harness exactly.
+10. **Rank IC ≠ P&L.** Strong IC with negative P&L appeared at 90 s (volatility artifact) and in the
    cross-section (skew). Always report median vs mean and the worst 1 % of days.
 
 ## 7. Reproducing
@@ -137,8 +170,9 @@ Ranked by how often they changed a conclusion:
   (pyarrow, xgboost, torch, nbformat, nbclient, ipykernel, psutil) go on `PYTHONPATH`.
 - GPU studies are Colab notebooks built by `runs/harness_*/build_notebook.py` (builders refuse to
   overwrite executed notebooks); each has a `test_notebook.py` with a SMOKE execution.
-- Cross-sectional and carry studies run locally in about a minute: `runs/harness_xsec/run_r4.py`,
-  `run_r5.py` (data: `fetch_archive.py`, ~45 min, resumable).
+- Cross-sectional, carry, trend and low-vol studies run locally in about a minute: `runs/harness_xsec/run_r4.py`,
+  `run_r5.py`, `run_r6.py`, `run_r4b.py` (data: `fetch_archive.py`, ~45 min, resumable); each has a `test_*.py`
+  (xsec 20, carry 15, trend 29, lowvol 24 checks).
 - Large data stays out of git (`.gitignore`: `data/`, `*.npz`, `*.pkl`, `*.tar`).
 
 ## 8. Document index
@@ -151,5 +185,6 @@ Ranked by how often they changed a conclusion:
 | big-move direction | `breakout_probe.analysis.md`, `v1_stage2_probe.analysis.md`, `continuation_conditioned.analysis.md`, `latency_decay_probe.analysis.md`, `wide_probe.analysis.md` |
 | fees | `fee_reprice.analysis.md` |
 | cross-section and carry | `r4_xsec.analysis.md`, `r5_carry.analysis.md` |
-| ideas, pre-registrations, status | `next_signal_ideas.md` (Rounds 1–3, R1–R5, W1) |
-| untested designs | `run014.plan.md`, `features.explanation.run.013.md`, `btc_lstm.run.012.md` |
+| trend and hedged low volatility (Round 4) | `r6_trend.analysis.md`, `r4b_lowvol.analysis.md` |
+| ideas, pre-registrations, status | `next_signal_ideas.md` (Rounds 1–4, R1–R6, R4b, W1; R9 registered, not run) |
+| untested designs | `run014.plan.md` (marked superseded 2026-10-05), `features.explanation.run.013.md`, `btc_lstm.run.012.md` |

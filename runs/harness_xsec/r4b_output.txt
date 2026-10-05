@@ -1,0 +1,55 @@
+panels 857 symbols, 2434 days | 40s
+primary universe (41, 100) done | 70s
+top-40 info done | 79s
+
+===== primary: ranks 41-100, quintile 12, 2021-07-24 -> 2026-08-30 (1864 d) =====
+  H=1
+    primary  net   -6.0 bp/d (gross   -5.4, cost 0.6) | ann  -21.8 % | Sharpe -0.55 | NW t -1.18 | median   +0.0 | trimmed mean   -6.2 | std 2.06 % | skew +0.24 | worst  -13.7 % | maxDD  -159.0 pp | beta -0.01 | hedge 0.94 | turnover 0.14/d | blocks+ 0/5 | lag -6.0
+    control  net   -9.4 bp/d (gross   -9.1, cost 0.4) | ann  -34.4 % | Sharpe -0.73 | NW t -1.62 | median   +0.0 | trimmed mean   -8.6 | std 2.48 % | skew -0.23 | worst  -13.8 % | maxDD  -275.0 pp | beta -0.00 | hedge 1.17 | turnover 0.08/d | blocks+ 1/5 | lag -9.0
+    info_ls  net   -3.0 bp/d (gross   -2.1, cost 0.9) | ann  -10.9 % | Sharpe -0.32 | NW t -0.66 | median   +0.0 | trimmed mean   -4.1 | std 1.78 % | skew +0.69 | worst  -10.1 % | maxDD   -96.7 pp | beta -0.02 | hedge 0.58 | turnover 0.19/d | blocks+ 1/5 | lag -3.2
+    blocks bp/day (primary): [-6.8, -8.4, -7.9, -6.7, -0.4] | primary - control +3.4 bp/d (NW t 1.09) | perm pct 91.0 (null p97.5 -4.4 bp)
+      FAIL net_t: net -6.0 bp/day, NW t -1.18, Holm p 1.000
+      FAIL beats_control: diff +3.4 bp/day, NW t 1.09
+      FAIL blocks: 0 of 5 365-day blocks
+      FAIL perm: 91.0 th percentile of gross
+      FAIL lag: -6.0 bp/day
+      FAIL median_mean_sign: median +0.0, mean -6.0
+    cell: FAIL
+  H=7
+    primary  net   -5.7 bp/d (gross   -5.4, cost 0.3) | ann  -20.8 % | Sharpe -0.52 | NW t -1.09 | median   +0.0 | trimmed mean   -5.8 | std 2.11 % | skew +0.11 | worst  -13.7 % | maxDD  -160.8 pp | beta -0.03 | hedge 0.94 | turnover 0.07/d | blocks+ 1/5 | lag -5.4
+    control  net   -9.4 bp/d (gross   -9.1, cost 0.3) | ann  -34.4 % | Sharpe -0.72 | NW t -1.62 | median   +0.0 | trimmed mean   -8.1 | std 2.49 % | skew -0.33 | worst  -14.1 % | maxDD  -268.9 pp | beta -0.02 | hedge 1.18 | turnover 0.06/d | blocks+ 1/5 | lag -9.1
+    info_ls  net   -2.6 bp/d (gross   -2.2, cost 0.5) | ann   -9.5 % | Sharpe -0.29 | NW t -0.59 | median   +0.0 | trimmed mean   -3.2 | std 1.74 % | skew +0.58 | worst   -9.5 % | maxDD   -94.3 pp | beta -0.02 | hedge 0.59 | turnover 0.10/d | blocks+ 1/5 | lag -2.4
+    blocks bp/day (primary): [-4.8, -10.2, -6.0, -9.1, 1.1] | primary - control +3.7 bp/d (NW t 1.29) | perm pct 100.0 (null p97.5 -7.1 bp)
+      FAIL net_t: net -5.7 bp/day, NW t -1.09, Holm p 1.000
+      FAIL beats_control: diff +3.7 bp/day, NW t 1.29
+      FAIL blocks: 1 of 5 365-day blocks
+      OK   perm: 100.0 th percentile of gross
+      FAIL lag: -5.4 bp/day
+      FAIL median_mean_sign: median +0.0, mean -5.7
+    cell: FAIL
+  primary VERDICT: FAIL
+
+===== info_top40: ranks 1-40, quintile 8, 2020-12-22 -> 2026-08-30 (2078 d) =====
+  H=1
+    primary  net   +4.1 bp/d (gross   +4.6, cost 0.5) | ann  +15.0 % | Sharpe  0.36 | NW t  0.81 | median   -1.3 | trimmed mean   +3.6 | std 2.18 % | skew +0.28 | worst  -19.9 % | maxDD   -95.9 pp | beta +0.00 | hedge 0.98 | turnover 0.10/d | blocks+ 3/5 | lag +4.0
+    control  net   +0.0 bp/d (gross   +0.3, cost 0.2) | ann   +0.1 % | Sharpe  0.00 | NW t  0.00 | median   +2.0 | trimmed mean   +0.5 | std 2.79 % | skew -0.12 | worst  -18.6 % | maxDD  -180.6 pp | beta -0.01 | hedge 1.26 | turnover 0.05/d | blocks+ 2/5 | lag +1.0
+    blocks bp/day (primary): [29.6, 4.8, -10.2, -1.0, 2.2] | primary - control +4.1 bp/d (NW t 0.95) | perm pct 88.0 (null p97.5 +7.5 bp)
+      FAIL net_t: net +4.1 bp/day, NW t 0.81, Holm p 0.420
+      FAIL beats_control: diff +4.1 bp/day, NW t 0.95
+      FAIL blocks: 3 of 5 365-day blocks
+      FAIL perm: 88.0 th percentile of gross
+      OK   lag: +4.0 bp/day
+      FAIL median_mean_sign: median -1.3, mean +4.1
+    cell: FAIL
+  H=7
+    primary  net   +3.7 bp/d (gross   +3.9, cost 0.3) | ann  +13.4 % | Sharpe  0.32 | NW t  0.72 | median   -2.7 | trimmed mean   +3.0 | std 2.20 % | skew +0.36 | worst  -19.4 % | maxDD   -98.9 pp | beta +0.00 | hedge 0.99 | turnover 0.06/d | blocks+ 3/5 | lag +3.9
+    control  net   +0.3 bp/d (gross   +0.5, cost 0.2) | ann   +1.1 % | Sharpe  0.02 | NW t  0.05 | median   +2.5 | trimmed mean   +1.0 | std 2.76 % | skew -0.16 | worst  -18.6 % | maxDD  -188.5 pp | beta -0.01 | hedge 1.26 | turnover 0.04/d | blocks+ 2/5 | lag +1.2
+    blocks bp/day (primary): [29.7, 3.5, -10.8, -1.2, 2.4] | primary - control +3.3 bp/d (NW t 0.84) | perm pct 100.0 (null p97.5 +2.7 bp)
+      FAIL net_t: net +3.7 bp/day, NW t 0.72, Holm p 0.420
+      FAIL beats_control: diff +3.3 bp/day, NW t 0.84
+      FAIL blocks: 3 of 5 365-day blocks
+      OK   perm: 100.0 th percentile of gross
+      OK   lag: +3.9 bp/day
+      FAIL median_mean_sign: median -2.7, mean +3.7
+    cell: FAIL
+  info_top40 VERDICT: FAIL
