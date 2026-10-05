@@ -493,3 +493,57 @@ sized to 60-day beta) nets −6.0 bp/day (NW t −1.18) at H = 1, −5.7 at H = 
 The beta-hedged equal-weight control loses −9.4 bp/day (alts bleed vs BTC); primary − control +3.4 bp/day (t 1.09), the right
 sign but not significant. Top-40 re-run (info) +4.1 bp/day, t 0.81. Round 4 remaining: R9 (borrow-rate check, needs a
 read-only API key).
+
+---
+
+## Round 5 — V1: is realised volatility mispriced against DVOL? — pre-registration (2026-10-05, before the code)
+
+Origin: `vol_monetisation_probe.plan.md` (spec for monetising the volatility detector with options). Before any detector work,
+test the premise with data on disk: **is 30-day forward realised volatility predictably different from the implied volatility
+the market quotes (Deribit DVOL), given a standard realised-vol forecast?** If a HAR-RV forecast carries no information that
+DVOL lacks, a detector whose marginal contribution is small cannot rescue the trade. This is R7 (options with a volatility
+veto) in its cheapest form, with **no detector** and **no options chain**: the P&L is a frictionless proxy for a delta-hedged
+30-day volatility position (short vol earns `IV − RV` in annualised vol points).
+
+**Data.** Deribit DVOL daily OHLC (public API, 2021-03-24 →), 30-day constant-maturity BTC implied volatility, annualised %.
+BTC 5-minute klines (`data/btcusdt_5m_klines.pkl`, 2019-09 → 2026-09, complete) for realised volatility.
+
+**Definitions (day t = 00:00 UTC).**
+- `IV_t` = close of the DVOL daily bar of day t − 1 (the value at 00:00 of t).
+- Daily realised variance of day d = sum of squared 5-minute log returns of the UTC day (needs all 288 bars).
+- `RV_t` (forward) = 100 · sqrt(365 · mean daily variance over days t … t + 29): the volatility realised over the 30 days IV prices.
+- **HAR features at t (all known at t):** log of the annualised vol of day t − 1, of the mean variance over t − 5 … t − 1, and over
+  t − 22 … t − 1. **Target** log RV_t. Expanding-window OLS from 2020-01-01, refit on the first day of each month using only
+  samples whose 30-day window ended before the refit day (purge 30 d). Forecast `F_t = exp(pred + ½ s²)`, s² the training residual
+  variance. Every DVOL day is out of sample for HAR.
+
+**Tests (one horizon, no grid).**
+- **P0 (information):** mean `IV − RV` (the variance risk premium) over all days, Newey–West (30 lags) t, and on one entry per
+  30 days.
+- **P1 (skill beyond the market, primary):** regress `log(RV_t / IV_t)` on `log(F_t / IV_t)` (intercept + slope), Newey–West 30 lags.
+  Efficient pricing means slope 0; a forecast the market lacks means slope > 0. **P1 passes iff slope > 0 with NW t ≥ 2.**
+  *(Changed during test design, before any real-data number: the vol-point version `RV − IV` on `F − IV` returns slope 1 under a
+  constant proportional premium `IV = c·E[RV]`, which is a level premium, not information. The log-ratio version returns 0.)*
+- **P2 (tradeable, gated on nothing, reported either way):** daily entry of a 30-day position with P&L `x_t = pos_t · (IV_t − RV_t)
+  − f·|pos_t|`, `f` = 2.0 vol points per entry (friction assumption, **unverified**; 0 / 1 / 3 also reported). Arms:
+  **veto-short** (`pos = −1`, i.e. short vol, only when `F_t < IV_t`, else flat), **long-timed** (long vol when `F_t > IV_t`),
+  **always-short** (benchmark). **P2 passes iff veto-short has mean x > 0 at f = 2 with a moving-block-bootstrap (block 30,
+  2,000 draws) 95 % CI lower bound > 0 and is positive in ≥ 75 % of calendar years of the sample.**
+- Controls: moving-block bootstrap (block 30) because entries overlap; entry-lag row (use DVOL of day t, i.e. one day later);
+  a naive forecast arm (trailing 30-day RV instead of HAR); median vs mean; worst 1 % of entries; per-year table.
+
+**Kill / decision.**
+- **P1 fails** → the market's IV already contains what HAR knows: close the option branch; do not run the detector probe.
+- **P1 passes, P2 fails** → mispricing exists but not at the assumed friction; the detector probe is optional and only worth
+  running if its projected gain exceeds the shortfall.
+- **Both pass** → the premise is live; the detector probe in the spec becomes worth running, and so does a real option-cost study.
+- Caveat fixed now: ~65 independent 30-day periods; DVOL is a 30-day index (horizon-matched by construction); the sample is
+  one regime-rich market; P&L is a frictionless variance proxy, not an executed option book.
+
+### Status (2026-10-05) — V1 executed: P1 and P2 pass, narrowly; evidence carried by 2021–22
+
+`vrp_dvol.analysis.md`. Sample 2021-03 → 2026-08 (1,978 entry days, ~66 independent months). VRP +5.2 vol points (NW t 3.25). P1: HAR slope
++0.41 (t 3.18; naive −0.02) → PASS. P2: veto-short +3.04 vol pts per entry day at a 2-point friction, CI [+1.46, +4.78], 5 / 6 years positive
+(needs 5) → PASS by 0.1–0.4 point margins. Diagnostics: slope +0.77 (t 3.06) in 2021–22 vs +0.19 (t 1.43) in 2023–26; veto-short +8.1 → +0.6 per
+entry day; veto minus always-short −0.15 (CI [−2.1, +2.0]); tail cut (worst 1 % −17 vs −60) but not the May-2021 event. Decision: premise
+not dead, but weak and decaying; forward-score the rule first, then a real option-cost study; the detector probe last.
