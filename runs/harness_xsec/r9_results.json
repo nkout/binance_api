@@ -1,0 +1,236 @@
+{
+ "fetched_ms": 1791234083660,
+ "S1": {
+  "summary": {
+   "n_candidates": 11,
+   "n_borrowable": 9,
+   "n_qualifying": 0,
+   "alive": false
+  },
+  "rows": [
+   {
+    "symbol": "MANAUSDT",
+    "base": "MANA",
+    "mark": 0.10536172,
+    "last_funding": -0.00033225,
+    "fund7": -0.0005737204761904763,
+    "income_ann": 0.6282239214285715,
+    "borrowable": true,
+    "borrow_ann": 0.0820447,
+    "limit_usd": 5584.17116,
+    "net_ann": 0.48777922142857155
+   },
+   {
+    "symbol": "ONEUSDT",
+    "base": "ONE",
+    "mark": 0.0022669,
+    "last_funding": -0.00289552,
+    "fund7": -0.006145817619047619,
+    "income_ann": 6.729670292857143,
+    "borrowable": true,
+    "borrow_ann": 0.16377915,
+    "limit_usd": 1623.1004,
+    "net_ann": 6.507491142857143
+   },
+   {
+    "symbol": "GTCUSDT",
+    "base": "GTC",
+    "mark": 0.18538105,
+    "last_funding": -0.00138802,
+    "fund7": -0.0025329533333333333,
+    "income_ann": 2.7735838999999998,
+    "borrowable": true,
+    "borrow_ann": 0.81592465,
+    "limit_usd": 1483.0484,
+    "net_ann": 1.8992592499999998
+   },
+   {
+    "symbol": "BWETUSDT",
+    "base": "BWET",
+    "mark": 880.69504387,
+    "last_funding": -0.00287463,
+    "fund7": -0.0010979404761904763,
+    "income_ann": 1.2022448214285715,
+    "borrowable": false
+   },
+   {
+    "symbol": "ORCAUSDT",
+    "base": "ORCA",
+    "mark": 2.187,
+    "last_funding": -0.00191837,
+    "fund7": -0.0003745071428571429,
+    "income_ann": 0.41008532142857146,
+    "borrowable": true,
+    "borrow_ann": 0.66921655,
+    "limit_usd": 2187.0,
+    "net_ann": -0.31753122857142857
+   },
+   {
+    "symbol": "2ZUSDT",
+    "base": "2Z",
+    "mark": 0.04328,
+    "last_funding": -0.00020026,
+    "fund7": -0.0012983885714285715,
+    "income_ann": 1.4217354857142859,
+    "borrowable": true,
+    "borrow_ann": 0.6027902,
+    "limit_usd": 2726.64,
+    "net_ann": 0.7605452857142858
+   },
+   {
+    "symbol": "ARKUSDT",
+    "base": "ARK",
+    "mark": 0.21866286,
+    "last_funding": -0.00022146,
+    "fund7": -0.013093610952380954,
+    "income_ann": 14.337503992857144,
+    "borrowable": true,
+    "borrow_ann": 0.866875,
+    "limit_usd": 1967.9657399999999,
+    "net_ann": 13.412228992857143
+   },
+   {
+    "symbol": "QNTUSDT",
+    "base": "QNT",
+    "mark": 252.72716452,
+    "last_funding": -0.00099038,
+    "fund7": -0.0008455780952380953,
+    "income_ann": 0.9259080142857145,
+    "borrowable": true,
+    "borrow_ann": 0.17987565,
+    "limit_usd": 2527.2716452,
+    "net_ann": 0.6876323642857145
+   },
+   {
+    "symbol": "RLCUSDT",
+    "base": "RLC",
+    "mark": 0.65139591,
+    "last_funding": -0.00010029,
+    "fund7": -0.0012078966666666667,
+    "income_ann": 1.3226468500000002,
+    "borrowable": true,
+    "borrow_ann": 0.85963705,
+    "limit_usd": 4559.7713699999995,
+    "net_ann": 0.40460980000000013
+   },
+   {
+    "symbol": "SANDUSDT",
+    "base": "SAND",
+    "mark": 0.06866,
+    "last_funding": -0.00135248,
+    "fund7": -0.0018423185714285713,
+    "income_ann": 2.0173388357142854,
+    "borrowable": true,
+    "borrow_ann": 0.23116180000000003,
+    "limit_usd": 4806.2,
+    "net_ann": 1.7277770357142854
+   },
+   {
+    "symbol": "CARVUSDT",
+    "base": "CARV",
+    "mark": 0.05056,
+    "last_funding": -0.0015648,
+    "fund7": -0.0012549114285714284,
+    "income_ann": 1.3741280142857142,
+    "borrowable": false
+   }
+  ]
+ },
+ "S2": {
+  "start": "2020-10-14",
+  "end": "2026-08-30",
+  "days": 2147,
+  "r5_original": {
+   "ann_pct": 37.32571163382359,
+   "years_pct": {
+    "2020": 1.8674091889422584,
+    "2021": 5.725423641721801,
+    "2022": 36.263830705622944,
+    "2023": 33.64090955952647,
+    "2024": 3.5679720580275647,
+    "2025": 74.8403858272357,
+    "2026": 63.65106320472938
+   },
+   "mean_positions": 3.072193758733116
+  },
+  "borrowable_only_no_borrow_cost": {
+   "ann_pct": 26.744842799734776,
+   "years_pct": {
+    "2020": 1.4370795621970907,
+    "2021": 3.6071244098560475,
+    "2022": 32.849023218874265,
+    "2023": 20.586535220741823,
+    "2024": 3.505958483626507,
+    "2025": 34.43215835349961,
+    "2026": 60.90041524717882
+   },
+   "mean_positions": 2.6609222170470423
+  },
+  "repriced": {
+   "ann_pct": 18.881501897487457,
+   "years_pct": {
+    "2020": 1.0559031621970905,
+    "2021": 1.3739858348560472,
+    "2022": 23.81180679387426,
+    "2023": 14.304504245741823,
+    "2024": -0.5117756913734939,
+    "2025": 22.78336707849961,
+    "2026": 48.246823847178824
+   },
+   "worst_month_pct": -0.833388376774952,
+   "maxdd_pct": -1.4836248564885357,
+   "sharpe": 3.7891984919020594,
+   "mean_positions": 2.6609222170470423,
+   "borrow_cost_ann_pct": 7.863340902247323,
+   "mean_borrow_rate_on_held_ann_pct": 39.4015821626116,
+   "breakeven_multiple": 2.8289302315987923
+  },
+  "coverage": {
+   "r5_position_days": 6596,
+   "not_borrowable_today": 971,
+   "share_not_borrowable": 0.14721043056397817,
+   "coins_in_r5_episodes": 193,
+   "coins_not_listed": 43
+  },
+  "r5_top_coins_today": {
+   "BNB": {
+    "borrow_ann": 0.02972925,
+    "limit_coin": 300.0
+   },
+   "WAVES": null,
+   "BCH": {
+    "borrow_ann": 0.07710625,
+    "limit_coin": 100.0
+   },
+   "ENA": {
+    "borrow_ann": 0.2510981,
+    "limit_coin": 183000.0
+   },
+   "TRUMP": {
+    "borrow_ann": 0.23772085,
+    "limit_coin": 4000.0
+   },
+   "CRV": {
+    "borrow_ann": 0.09961215000000001,
+    "limit_coin": 28000.0
+   },
+   "TRX": {
+    "borrow_ann": 0.09458245,
+    "limit_coin": 149000.0
+   },
+   "APE": {
+    "borrow_ann": 0.3039793,
+    "limit_coin": 58000.0
+   },
+   "API3": {
+    "borrow_ann": 0.55456275,
+    "limit_coin": 19000.0
+   },
+   "AXS": {
+    "borrow_ann": 0.31439275,
+    "limit_coin": 3000.0
+   }
+  },
+  "alive": false
+ }
+}

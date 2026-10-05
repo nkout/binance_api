@@ -561,3 +561,34 @@ else flat; 2 vol points friction per active entry). **Forward window = entry day
 - **No verdict until ≥ 180 completed forward entry days** (about six independent months, early 2027). Then **PASS iff** veto-short mean at f = 2 is
   > 0 with a moving-block-bootstrap (block 30) 95 % CI lower bound > 0 **and** the forward P1 slope (HAR) is > 0. Anything earlier is reported as
   descriptive and n is stated. Rescoring is a rerun of `forward_score.py`; no parameter may change.
+
+---
+
+## R9 — `CARRY−` borrow-rate check — implementation details fixed before the code (2026-10-05)
+
+R9 was registered in Round 4. Facts found while preparing it: no API key is configured in this environment, but Binance publishes per-asset **VIP0 cross-margin
+daily interest rates and borrow limits** on an undocumented public web endpoint (`https://www.binance.com/bapi/margin/v1/public/margin/vip/spec/list-all`, no auth).
+That gives a **current snapshot only**; the signed history endpoint (`/sapi/v1/margin/interestRateHistory`) still needs a key. So R9 is run as a snapshot plus a
+re-pricing of the R5 `CARRY−` sample at **today's** rates, which is a proxy for the past, stated as such.
+
+- **S1, today's candidates.** Every USDT perp whose FUND7 (sum of funding over the last 7 days ÷ 21, the R4 / R5 definition) ≤ −0.03 % per 8 h, from the public futures
+  endpoints (`premiumIndex` to pre-filter on `lastFundingRate` ≤ −0.01 %, then `fundingRate` history). For each: funding collected by a long perp
+  (annualised = −FUND7 × 3 × 365), whether the base asset is on the cross-margin list, its borrow rate (daily × 365, simple), borrow limit in USD (coin limit × mark price),
+  and net = funding − borrow − amortised costs (24 bp round trip, R5 costs, over the R5 mean `CARRY−` hold of 15 d = 5.84 %/yr). Base asset = symbol minus `USDT`,
+  with the `1000` / `10000` / `1000000` / `1M` multiplier prefixes stripped.
+  **S1 ALIVE iff ≥ 3 candidates are borrowable with net ≥ 4.5 % (risk-free) and a borrow limit ≥ 50,000 USD; otherwise DEAD for today.**
+- **S2, R5 `CARRY−` re-priced.** Re-run `CARRY−` exactly as R5 (same eligibility, signal, 10 positions, 3× perp, costs) but (a) only coins **currently** on the cross-margin
+  list are eligible (a coin that is not borrowable today is treated as not tradable), and (b) each open position pays the coin's current VIP0 borrow rate on its spot-short
+  notional (0.075 of capital per position). Report net %/yr, per-year, mean positions, coin coverage (share of R5 episode-days on coins not listed today), and the
+  **uniform multiple of today's rates at which net equals the 4.5 % risk-free rate**. **S2 ALIVE iff net ≥ 4.5 % and positive in every calendar year 2021–2025.**
+- **Kill / decision.** Both DEAD → `CARRY−` is closed (the +37 %/yr gross was the price of a scarce short). Either ALIVE → note it as a lead only: rates today are not
+  rates then, so the next step would be the signed history with a read-only key.
+- Caveats fixed now: the endpoint is undocumented and may change; VIP0 cross-margin rates are for the account tier a small trader has; isolated-margin-only assets are not
+  listed; the proxy ignores that borrow rates spike exactly when funding is most negative.
+
+### Status (2026-10-06) — R9 executed (snapshot + re-pricing): DEAD by the letter; prior falsified
+
+`r9_borrow.analysis.md`. S1: 11 candidates (FUND7 ≤ −0.03 %), 9 borrowable, funding 41–1,434 %/yr vs borrow 8–87 %/yr, but every VIP0 borrow limit $1.5k–5.6k → 0 qualify (need ≥ 3
+with ≥ $50k) → DEAD. S2: R5 `CARRY−` on currently-borrowable coins at today's rates +18.9 %/yr (gross of borrow on those coins +26.7, R5 original +37.3), Sharpe 3.8, max DD −1.5 %,
+but 2024 −0.51 % → DEAD on "every year 2021–2025 positive". Break-even at 2.83× today's rates: borrow does **not** absorb the gross, contrary to the prior. Capacity-bound (small account) and
+rests on today's rates; the signed history (read-only key) is still open. `r9_borrow_snapshot.json` starts a borrow-rate history.

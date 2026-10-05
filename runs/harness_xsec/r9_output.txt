@@ -1,0 +1,23 @@
+/home/nkout/projects/binance_api/runs/harness_xsec/r9_borrow.py:149: Pandas4Warning: Timestamp.utcnow is deprecated and will be removed in a future version. Use Timestamp.now('UTC') instead.
+  json.dump(dict(fetched_utc=pd.Timestamp.utcnow().isoformat(), source=BORROW_URL, vip_level=0, assets=borrow), open(os.path.join(HERE, "r9_borrow_snapshot.json"), "w"))
+borrow list: 477 assets | perps scanned 874, pre-filtered 27 (last funding <= -0.01 %), FUND7 <= -0.03 %: 11
+  ARKUSDT        FUND7 -1.309 %/8h  income 1433.8 %/yr  borrow   86.7 %/yr  net +1341.2 %/yr  limit $1,968
+  ONEUSDT        FUND7 -0.615 %/8h  income  673.0 %/yr  borrow   16.4 %/yr  net  +650.7 %/yr  limit $1,623
+  GTCUSDT        FUND7 -0.253 %/8h  income  277.4 %/yr  borrow   81.6 %/yr  net  +189.9 %/yr  limit $1,483
+  SANDUSDT       FUND7 -0.184 %/8h  income  201.7 %/yr  borrow   23.1 %/yr  net  +172.8 %/yr  limit $4,806
+  2ZUSDT         FUND7 -0.130 %/8h  income  142.2 %/yr  borrow   60.3 %/yr  net   +76.1 %/yr  limit $2,727
+  CARVUSDT       FUND7 -0.125 %/8h  income  137.4 %/yr  NOT on the cross-margin list
+  RLCUSDT        FUND7 -0.121 %/8h  income  132.3 %/yr  borrow   86.0 %/yr  net   +40.5 %/yr  limit $4,560
+  BWETUSDT       FUND7 -0.110 %/8h  income  120.2 %/yr  NOT on the cross-margin list
+  QNTUSDT        FUND7 -0.085 %/8h  income   92.6 %/yr  borrow   18.0 %/yr  net   +68.8 %/yr  limit $2,527
+  MANAUSDT       FUND7 -0.057 %/8h  income   62.8 %/yr  borrow    8.2 %/yr  net   +48.8 %/yr  limit $5,584
+  ORCAUSDT       FUND7 -0.037 %/8h  income   41.0 %/yr  borrow   66.9 %/yr  net   -31.8 %/yr  limit $2,187
+S1: 9 of 11 borrowable; 0 qualify (net >= 4.5 %, limit >= $50k) -> DEAD
+
+S2 R5 CARRY- 2020-10-14 -> 2026-08-30 (2147 d)
+  R5 original (gross of borrow)         +37.33 %/yr, 3.07 positions
+  currently-borrowable coins only       +26.74 %/yr, 2.66 positions  (share of R5 position-days not borrowable today 15 %, 43 of 193 coins unlisted)
+  + today's borrow rates                +18.88 %/yr, Sharpe 3.79, worst month -0.8 %, maxDD -1.5 %, borrow cost 7.86 %/yr (mean rate on held 39.4 %/yr), break-even multiple of today's rates 2.83x
+  years %: 2020 +1.06  2021 +1.37  2022 +23.81  2023 +14.30  2024 -0.51  2025 +22.78  2026 +48.25
+  R5 top CARRY- coins today: BNB 3 %/yr, WAVES n/a, BCH 8 %/yr, ENA 25 %/yr, TRUMP 24 %/yr, CRV 10 %/yr, TRX 9 %/yr, APE 30 %/yr, API3 55 %/yr, AXS 31 %/yr
+S2 -> DEAD

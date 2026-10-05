@@ -73,8 +73,8 @@ Point-in-time top-40 perps, six factors × three holding periods, signs fixed on
   average, invested 17 % of days, because most funding-rich coins are perp-only.
 - **Permanent BTC + ETH cash-and-carry:** +8.77 %/yr over 2020-10 → 2026-08, but **25.5 % in 2021,
   then 1.8, 6.0, 9.4, 3.8 %, and ~1.5 % annualised in 2026**. Competed away to about the risk-free rate.
-- **Negative-funding mirror** (+37 %/yr) is **gross of spot borrow**. Negative funding is largely the
-  price of a scarce short, so the borrow cost is expected to absorb it; it could not be tested.
+- **Negative-funding mirror** (+37 %/yr) is **gross of spot borrow**. R9 (2026-10-06) re-priced it at today's borrow rates: +18.9 %/yr on the coins borrowable today,
+  capacity-bound, history of borrow rates still unknown (§5).
 
 ### 2.4 Round 4: daily trend-following (R6) and hedged low volatility (R4b)
 
@@ -135,8 +135,9 @@ Each of these changes the economics rather than the model:
   The untested `run.013` price-level panel (maker fill timing) is the one experiment aimed at that.
 - **Co-located, sub-second execution.** The big-move tail is worth +11–14 bp at zero delay. A venue
   and infrastructure that act within ~100 ms could capture part of it. That is a different business.
-- **Cheap spot borrow** on negative-funding coins (R9: a live borrow-rate check, **not run**; it needs a read-only API key, and the
-  prior is that the borrow cost absorbs the +37 %/yr gross).
+- **Cheap spot borrow** on negative-funding coins. **R9 was run 2026-10-06** (`r9_borrow.analysis.md`, today's public VIP0 borrow rates; history needs a key): borrow does **not**
+  absorb the gross. `CARRY−` on currently-borrowable coins at today's rates nets +18.9 %/yr (break-even at 2.8× today's rates), but it is capacity-bound (VIP0 borrow limits $1.5k–5.6k per coin)
+  and failed the registered bars on capacity and one year (2024 −0.51 %).
 - **Other instruments.** Options (selling volatility with the detector as a veto, idea 1b) were never
   tested: no implied-volatility history was collected.
 - **Forward tests.** The historical samples are spent. The long-only trend variant (R6 `A_long`) and the low-vol tilt (R4b) are
@@ -184,7 +185,7 @@ Ranked by how often they changed a conclusion:
 | longer horizons | `gbm_probe.analysis.md`, `v1_year_data_audit.md`, `v1_4h_feasibility.analysis.md` |
 | big-move direction | `breakout_probe.analysis.md`, `v1_stage2_probe.analysis.md`, `continuation_conditioned.analysis.md`, `latency_decay_probe.analysis.md`, `wide_probe.analysis.md` |
 | fees | `fee_reprice.analysis.md` |
-| cross-section and carry | `r4_xsec.analysis.md`, `r5_carry.analysis.md` |
+| cross-section and carry | `r4_xsec.analysis.md`, `r5_carry.analysis.md`, `r9_borrow.analysis.md` |
 | trend and hedged low volatility (Round 4) | `r6_trend.analysis.md`, `r4b_lowvol.analysis.md` |
-| ideas, pre-registrations, status | `next_signal_ideas.md` (Rounds 1–4, R1–R6, R4b, W1; R9 registered, not run) |
+| ideas, pre-registrations, status | `next_signal_ideas.md` (Rounds 1–5, R1–R6, R4b, R9, V1, W1) |
 | untested designs | `run014.plan.md` (marked superseded 2026-10-05), `features.explanation.run.013.md`, `btc_lstm.run.012.md` |
