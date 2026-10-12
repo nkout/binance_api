@@ -2,7 +2,7 @@
 
 *Written 2026-10-01 as the programme's closing document; updated 2026-10-05 with Round 4 (§2.4: daily trend-following R6 and the
 hedged low-volatility factor R4b, both FAIL) and 2026-10-06 with two post-close probes (§2.5: the DVOL variance-premium check V1 and the
-borrow-rate check R9) and 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
+borrow-rate check R9) and 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4 and the alt-short basket N1). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
 comes from a write-up in `runs/`, listed in §8, and every result there is reproducible from a harness
 or an executed notebook in this repository.*
 
@@ -115,7 +115,7 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
   capacity-bound carry resting on today's rates, which probably flatter the history (borrow demand spikes in squeezes; delisted coins excluded). A snapshot script
   (`harness_xsec/snapshot_borrow.py`) builds a rate history when run (manually; the cron schedule was removed because the machine is not always on).
 
-### 2.6 Round 6 (2026-10-12): funding-settlement event study N4
+### 2.6 Round 6 (2026-10-12): funding-settlement event study N4, alt-short basket N1
 
 - **Test.** Does price move around an extreme funding settlement? (`n4_settlement.analysis.md`; pre-registered in `next_signal_ideas.md` Round 6, committed before
   any code.) Every settlement of a top-100 coin whose previous rate had |r| ≥ 0.10 %, 2021-05-22 → 2026-08-30, 1 h bars, 9 bp round trip.
@@ -135,6 +135,12 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
   - An order at s + 2 min nets +0.8 bp at 19 bp all-in, CI [−18.7, +20.7], median −8.1. Fee-only it is +10.8, CI includes 0.
   - The effect is real but priced within a minute: a latency race (as R1), not a retail taker trade.
   - Lesson: a 1 h bar cannot show *when* inside the hour a move happens. Check minute resolution before believing an hourly event result.
+- **N1, long BTC / short a beta-hedged basket of volume ranks 101–200** (`n1_altshort.analysis.md`; inverse-vol weights capped at 2 %, H = 7, 2024-01 → 2026-08,
+  947 days): **DEAD.**
+  - +8.1 bp/day net, NW t 0.91, 3 of 5 half-year blocks positive (+17.9, +26.5, +18.1, −5.3, −17.5 bp/day). Daily sd 2.7 %, max drawdown −69 pp.
+  - Ranks 1–40, ranks 41–100 and an equal-weight book show the same sign pattern. The R4b "alt bleed" was a 2024 → mid-2025 BTC-dominance phase, not a mid-cap
+    premium; the unseen September 2026 lost 15.6 %.
+  - The 2 % cap removed the single-coin pump tail (worst coin −2.5 % of notional); the worst days are market-wide alt rallies.
 
 ## 3. Why: the arithmetic that kept recurring
 

@@ -1,0 +1,44 @@
+panels 892 symbols, 2464 days | 31s
+primary done | 32s
+info arms done | 33s
+
+===== N1 PRIMARY: ranks 101-200, inv-vol cap 2%, H = 7 =====
+first day with the band: 2023-11-28 | window 2024-01-27 -> 2026-08-30 (947 days, 947 live)
+  primary                                net  +8.07 bp/d (gross  +8.41, cost 0.34) | NW t  0.91 | median  +8.40 | trimmed  +6.46 | ann  +29.4 % | Sharpe  0.58 | std 2.66 % | worst  -9.62 % | worst-1%  -8.79 % | maxDD  -68.6 | beta +0.02 | hedge 1.31 | short 1.00 | turnover 0.08 | lag +7.73
+  182-day blocks (bp/day): [17.87, 26.5, 18.11, -5.3, -17.46] -> 3/5 positive
+  P&L decomposition (bp/day): alt_price +3.78 | alt_funding -0.44 | btc_price +7.34 | btc_funding -2.27 | cost -0.34
+    [ ] net mean > 0 and NW t >= 2
+    [x] median and mean > 0
+    [x] trimmed mean > 0
+    [ ] >= 4 of 5 182-day blocks positive
+    [x] 1 h lag net > 0
+    [x] worst day > -20 %
+  VERDICT N1: DEAD
+
+  largest single-coin daily loss: HIFIUSDT on 2025-09-12: -2.46 % of notional (coin total return +439.9 %)
+  10 worst days:
+    2024-11-16  book  -9.62 % | worst coin XLMUSDT         -0.77 % (ret   +51.4 %) | BTC leg  -0.62 %
+    2025-11-04  book  -9.22 % | worst coin ICPUSDT         -0.30 % (ret   +32.7 %) | BTC leg -11.09 %
+    2025-02-25  book  -9.10 % | worst coin COWUSDT         -0.43 % (ret   +48.3 %) | BTC leg  -5.32 %
+    2024-11-23  book  -9.07 % | worst coin MOVRUSDT        -0.43 % (ret   +46.0 %) | BTC leg  -1.45 %
+    2024-12-03  book  -8.87 % | worst coin SUNUSDT         -0.74 % (ret   +63.8 %) | BTC leg  -0.04 %
+    2025-05-09  book  -8.65 % | worst coin MOODENGUSDT     -0.39 % (ret   +73.3 %) | BTC leg  -0.43 %
+    2025-02-26  book  -8.63 % | worst coin NEIROETHUSDT    -0.08 % (ret    +9.9 %) | BTC leg  -8.05 %
+    2025-11-07  book  -8.06 % | worst coin PEOPLEUSDT      -0.43 % (ret   +36.3 %) | BTC leg  +4.02 %
+    2024-12-23  book  -7.86 % | worst coin ZKUSDT          -0.15 % (ret   +15.0 %) | BTC leg  -0.40 %
+    2025-07-15  book  -7.69 % | worst coin REZUSDT         -0.12 % (ret   +29.1 %) | BTC leg  -3.85 %
+
+===== INFORMATION ARMS (same window; not part of the verdict) =====
+  H=1 (same construction)                net  +8.23 bp/d (gross  +8.70, cost 0.47) | NW t  0.92 | median  +4.22 | trimmed  +6.35 | ann  +30.0 % | Sharpe  0.59 | std 2.68 % | worst  -9.21 % | worst-1%  -8.64 % | maxDD  -67.9 | beta +0.02 | hedge 1.30 | short 1.00 | turnover 0.11 | lag +7.62
+      decomposition: alt_price +4.33 | alt_funding -0.65 | btc_price +7.28 | btc_funding -2.26 | cost -0.47 | blocks [18.5, 27.6, 18.8, -4.4, -18.2]
+  equal-weight short, ranks 101-200      net  +6.96 bp/d (gross  +7.28, cost 0.33) | NW t  0.77 | median  +2.80 | trimmed  +5.29 | ann  +25.4 % | Sharpe  0.49 | std 2.71 % | worst  -9.44 % | worst-1%  -8.84 % | maxDD  -76.0 | beta +0.03 | hedge 1.32 | short 1.00 | turnover 0.07 | lag +6.72
+      decomposition: alt_price +1.93 | alt_funding -0.41 | btc_price +8.07 | btc_funding -2.30 | cost -0.33 | blocks [17.6, 28.8, 17.5, -8.8, -21.5]
+  ranks 41-100, inv-vol cap 3.3%         net +11.70 bp/d (gross +12.03, cost 0.33) | NW t  1.37 | median  +9.70 | trimmed +11.32 | ann  +42.7 % | Sharpe  0.86 | std 2.59 % | worst -10.18 % | worst-1%  -9.01 % | maxDD  -63.7 | beta +0.02 | hedge 1.34 | short 1.00 | turnover 0.07 | lag +11.25
+      decomposition: alt_price +8.23 | alt_funding -1.68 | btc_price +7.81 | btc_funding -2.34 | cost -0.33 | blocks [27.0, 24.6, 22.9, -11.1, -5.3]
+  ranks 1-40, inv-vol cap 5.0%           net  +9.00 bp/d (gross  +9.21, cost 0.21) | NW t  1.32 | median +10.57 | trimmed  +8.77 | ann  +32.9 % | Sharpe  0.78 | std 2.20 % | worst  -9.18 % | worst-1%  -7.56 % | maxDD  -43.3 | beta +0.03 | hedge 1.32 | short 1.00 | turnover 0.05 | lag +8.70
+      decomposition: alt_price +3.61 | alt_funding -0.72 | btc_price +8.65 | btc_funding -2.33 | cost -0.21 | blocks [25.8, 17.8, 12.1, -3.1, -6.9]
+
+===== FORWARD BLOCK from 2026-08-31 (30 days, unseen; descriptive) =====
+  net -52.00 bp/d | median -76.41 | total -15.60 % | worst day -3.25 %
+
+(33s)

@@ -772,7 +772,11 @@ new registration.
   - About 26 of the hour's 43 bp move happen in the first minute after the settlement.
   - Entry at s + 2 min nets +0.8 bp at 19 bp all-in, CI [−18.7, +20.7], median −8.1.
   - N4-F is not started.
-- N1 and N2 not yet built.
+- **N1 run: DEAD** (`n1_altshort.analysis.md`).
+  - +8.1 bp/day net but NW t 0.91, and only 3 of 5 blocks positive (+17.9, +26.5, +18.1, −5.3, −17.5).
+  - Same shape in every band (ranks 1–40, 41–100, equal-weight): a 2024 → mid-2025 BTC-dominance phase that reversed, not a mid-cap premium.
+  - Forward September 2026: −15.6 %.
+- N2 not yet built.
 
 ### N4 follow-up — forward ledger and minute-scale execution check (pre-registered 2026-10-12, before any data after 2026-09-30)
 
