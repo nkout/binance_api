@@ -1,0 +1,83 @@
+{
+ "window": [
+  "2021-10-01",
+  "2026-08-30",
+  1795
+ ],
+ "summary": {
+  "ann_pct": 10.351051921232548,
+  "years_pct": {
+   "2021": 6.393459415363393,
+   "2022": 0.3993384305140915,
+   "2023": -0.9816710561081361,
+   "2024": 8.45169665664066,
+   "2025": 37.750878222734734,
+   "2026": -1.1092134537682419
+  },
+  "worst_month_pct": -11.489722352402529,
+  "nw_t": 2.0156390765812535,
+  "sharpe": 0.6820681532756793,
+  "maxdd_pct": -27.6909860918444
+ },
+ "full_years": {
+  "2022": 0.3993384305140915,
+  "2023": -0.9816710561081361,
+  "2024": 8.45169665664066,
+  "2025": 37.750878222734734,
+  "2026": -1.1092134537682419
+ },
+ "split_pct_yr": {
+  "funding": 20.37286459428969,
+  "basis": -5.095837742695029,
+  "cost": 4.925974930362117,
+  "gross": 15.277026851594666,
+  "net": 10.351051921232548
+ },
+ "criteria": {
+  "annualised net >= 4.5 %": true,
+  "every year (>= 6 months) positive": false,
+  "worst month > -5 %": false,
+  "NW t >= 2": true,
+  "1 h lag net > 0": true,
+  "mean open positions >= 2": true
+ },
+ "verdict": "FAIL",
+ "mean_pos": 4.256824512534819,
+ "episodes": 811,
+ "median_hold": 7.0,
+ "margin_stress": 371,
+ "forward": {
+  "days": 30,
+  "net_pct": -2.392523888771527,
+  "ann_pct": -29.109040646720253,
+  "mean_pos": 6.866666666666666
+ },
+ "unmapped": [
+  "1MBABYDOGEUSDT",
+  "AIOTUSDT",
+  "AMDUSDT",
+  "BASUSDT",
+  "BEAMXUSDT",
+  "BIDUSDT",
+  "BROCCOLI714USDT",
+  "BROCCOLIF3BUSDT",
+  "BTSUSDT",
+  "BULLAUSDT",
+  "BZRXUSDT",
+  "DEGOUSDT",
+  "DODOXUSDT",
+  "DUSDT",
+  "FOOTBALLUSDT",
+  "GUAUSDT",
+  "IDOLUSDT",
+  "NATGASUSDT",
+  "NEIROUSDT",
+  "NUUSDT",
+  "PLAYUSDT",
+  "RAYSOLUSDT",
+  "RVVUSDT",
+  "TAKEUSDT",
+  "TRADOORUSDT",
+  "TSTUSDT"
+ ]
+}

@@ -1,0 +1,29 @@
+binance 892 symbols | bybit files aligned 573 | unmapped top-100-ever: 26 ['1MBABYDOGEUSDT', 'AIOTUSDT', 'AMDUSDT', 'BASUSDT', 'BEAMXUSDT', 'BIDUSDT', 'BROCCOLI714USDT', 'BROCCOLIF3BUSDT', 'BTSUSDT', 'BULLAUSDT', 'BZRXUSDT', 'DEGOUSDT', 'DODOXUSDT', 'DUSDT', 'FOOTBALLUSDT', 'GUAUSDT', 'IDOLUSDT', 'NATGASUSDT', 'NEIROUSDT', 'NUUSDT', 'PLAYUSDT', 'RAYSOLUSDT', 'RVVUSDT', 'TAKEUSDT', 'TRADOORUSDT', 'TSTUSDT'] | 35s
+delisting rule: 133 coins closed at the last common price (e.g. 1000CHEEMSUSDT, 1000XUSDT, ACXUSDT, AERGOUSDT, AGIXUSDT, AGTUSDT, AI16ZUSDT, AIAUSDT)
+window 2021-10-01 -> 2026-08-30 (1795 days)
+coverage of Binance top-100 coin-days in the window: Bybit perp exists 98.8% | in the set (filters incl. 2 M Bybit volume) 88.7% | mean set size 85.6
+
+===== N2 XFUND (registered) =====
+  annualised net +10.35 % on capital | NW t 2.02 | Sharpe 0.68 | max DD -27.69 pp | worst month -11.49 % | 1 h lag net +9.83 %/yr
+  years %: 2021: +6.39 (partial, < 6 months) | 2022: +0.40 | 2023: -0.98 | 2024: +8.45 | 2025: +37.75 | 2026: -1.11
+  P&L split %/yr: funding +20.37 | basis -5.10 | cost +4.93 | gross +15.28 | net +10.35
+  positions: mean open 4.26 | days with >= 1 open 87% | days at 10 19% | episodes 811 | median hold 7 d (mean 9.5) | trades/yr 328
+  daily net: mean +2.84 bp | median +0.00 bp | worst -16.24 % | worst 1 % mean -3.03 % | best +23.58 %
+  capacity: thinner venue's 30-day mean daily volume per held coin-day: median $23.3 M (10 % quantile $5.8 M)
+  margin stress: 371 of 811 episodes had a leg > 25% against entry
+    [x] annualised net >= 4.5 %
+    [ ] every year (>= 6 months) positive
+    [ ] worst month > -5 %
+    [x] NW t >= 2
+    [x] 1 h lag net > 0
+    [x] mean open positions >= 2
+  VERDICT N2: FAIL
+
+  info: |delta7| over set coin-days: median 0.0030 % | share >= 0.03 % 4.21% | >= 0.01 % 17.7%
+  info: mean open positions by year: 2021: 5.41 | 2022: 2.48 | 2023: 2.00 | 2024: 3.27 | 2025: 5.84 | 2026: 9.02
+  info: most traded coins (episodes): COTIUSDT 14, OMUSDT 12, RIVERUSDT 12, TRBUSDT 12, KAITOUSDT 11, MTLUSDT 11, PIPPINUSDT 11, HUSDT 10, GWEIUSDT 9, SAHARAUSDT 9
+
+===== FORWARD BLOCK from 2026-08-31 (30 days, unseen) =====
+  net -2.393 % (-29.11 %/yr) | mean open positions 6.87
+
+(73s)

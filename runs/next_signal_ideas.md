@@ -762,6 +762,21 @@ klines for the prior 30 days and ≥ 2 M USD mean daily Bybit volume.
 Bybit is chosen as the first venue because both venues are USDT-margined at VIP0. OKX and Hyperliquid (USDC, hourly funding) would be a
 new registration.
 
+### N2 implementation details (fixed 2026-10-12, before the run; the pre-registration is silent on these)
+
+- **Survivorship is better than the caveat assumed.**
+  - `instruments-info?status=Closed` lists delisted Bybit perps (308 of 1,106 USDT perps).
+  - Their funding and 1 h klines stay queryable with a window that ends before the delisting, so they are included.
+  - The remaining gap is symbol renames. Binance → Bybit mapping: exact name, else a unique match after stripping 10^k multipliers (1000SHIB ↔ SHIB1000).
+    Of 600 Binance perps ever in the top 100, 574 map. The 26 unmapped are reported.
+- **Sign flip.** A position also exits when sign(Δ7) changes: the "higher-funding venue" it was built on no longer holds. The same day it may re-enter in the
+  new direction, charged as an exit plus an entry.
+- **Set conditions.** The set also requires at least one settlement on each venue in the prior 7 days, so a missing funding history never reads as a 0 rate.
+- **Lag row.** The same positions (decided at 00:00), with both venues' returns and funding measured from 01:00.
+- **P&L basis.** Daily P&L is on constant leg notional, as in R5, with no rebalancing cost.
+- **Margin stress.** Counted on hourly closes: the long leg below entry × 0.75 or the short leg above entry × 1.25, at any hour of the holding.
+- **Years criterion.** Applies to calendar years with ≥ 182 days in the window.
+
 ### Status (2026-10-12)
 
 - Archive extended to 2026-09-30 (`fetch_archive.py --extend 2026-09`; 895 symbols).
@@ -776,7 +791,12 @@ new registration.
   - +8.1 bp/day net but NW t 0.91, and only 3 of 5 blocks positive (+17.9, +26.5, +18.1, −5.3, −17.5).
   - Same shape in every band (ranks 1–40, 41–100, equal-weight): a 2024 → mid-2025 BTC-dominance phase that reversed, not a mid-cap premium.
   - Forward September 2026: −15.6 %.
-- N2 not yet built.
+- **N2 run: FAIL** (`n2_xfund.analysis.md`).
+  - +10.35 %/yr on capital, NW t 2.02, mean 4.3 positions (capacity passes).
+  - 2023 −0.98 % and 2026 −1.11 %; worst month −11.5 % (2026-07).
+  - Funding +20.4 %/yr, eaten by cross-venue basis −5.1 and costs −4.9. 2025 is +37.8 %, and two coins make half the P&L.
+  - The delisting rule ("last common price") was implemented after the first run exposed flat zero-volume Binance bars after delistings. Both runs FAIL.
+- **Round 6 complete: N4 closed (execution), N1 DEAD, N2 FAIL.**
 
 ### N4 follow-up — forward ledger and minute-scale execution check (pre-registered 2026-10-12, before any data after 2026-09-30)
 

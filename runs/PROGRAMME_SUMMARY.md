@@ -2,7 +2,7 @@
 
 *Written 2026-10-01 as the programme's closing document; updated 2026-10-05 with Round 4 (§2.4: daily trend-following R6 and the
 hedged low-volatility factor R4b, both FAIL) and 2026-10-06 with two post-close probes (§2.5: the DVOL variance-premium check V1 and the
-borrow-rate check R9) and 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4 and the alt-short basket N1). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
+borrow-rate check R9) and 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4, the alt-short basket N1 and the Binance–Bybit funding spread N2). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
 comes from a write-up in `runs/`, listed in §8, and every result there is reproducible from a harness
 or an executed notebook in this repository.*
 
@@ -115,7 +115,7 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
   capacity-bound carry resting on today's rates, which probably flatter the history (borrow demand spikes in squeezes; delisted coins excluded). A snapshot script
   (`harness_xsec/snapshot_borrow.py`) builds a rate history when run (manually; the cron schedule was removed because the machine is not always on).
 
-### 2.6 Round 6 (2026-10-12): funding-settlement event study N4, alt-short basket N1
+### 2.6 Round 6 (2026-10-12): settlement event N4, alt-short basket N1, cross-venue funding N2
 
 - **Test.** Does price move around an extreme funding settlement? (`n4_settlement.analysis.md`; pre-registered in `next_signal_ideas.md` Round 6, committed before
   any code.) Every settlement of a top-100 coin whose previous rate had |r| ≥ 0.10 %, 2021-05-22 → 2026-08-30, 1 h bars, 9 bp round trip.
@@ -141,6 +141,17 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
   - Ranks 1–40, ranks 41–100 and an equal-weight book show the same sign pattern. The R4b "alt bleed" was a 2024 → mid-2025 BTC-dominance phase, not a mid-cap
     premium; the unseen September 2026 lost 15.6 %.
   - The 2 % cap removed the single-coin pump tail (worst coin −2.5 % of notional); the worst days are market-wide alt rallies.
+- **N2, cross-venue funding spread: short the Binance or Bybit perp with higher 7-day funding, long the other** (`n2_xfund.analysis.md`; 574 Bybit perps
+  including delisted ones; 2021-10 → 2026-08): **FAIL.**
+  - +10.35 %/yr on capital, NW t 2.02, 4.3 positions on average. Capacity, which killed `CARRY+` and R9, passes.
+  - 2023 (−1.0 %) and 2026 (−1.1 %) are negative, and the worst month is −11.5 %.
+  - Funding earns +20 %/yr, but cross-venue basis (−5) and costs (−5) take half. 2025 is +38 %, and two distressed coins make half the P&L.
+- **Data finding:** the Binance archive keeps printing flat zero-volume bars for months after a delisting. N2 now closes both legs at the last common price
+  (the registered rule). In single-venue studies a frozen price earns 0, as a closed position would, so their results stand.
+- **Round 6 outcome:** no tradeable result.
+  - N4: the edge is real but sits in the first minute.
+  - N1: a regime, not a premium.
+  - N2: a real premium that is too unstable from year to year.
 
 ## 3. Why: the arithmetic that kept recurring
 

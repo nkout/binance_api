@@ -1,0 +1,28 @@
+binance 892 symbols | bybit files aligned 573 | unmapped top-100-ever: 26 ['1MBABYDOGEUSDT', 'AIOTUSDT', 'AMDUSDT', 'BASUSDT', 'BEAMXUSDT', 'BIDUSDT', 'BROCCOLI714USDT', 'BROCCOLIF3BUSDT', 'BTSUSDT', 'BULLAUSDT', 'BZRXUSDT', 'DEGOUSDT', 'DODOXUSDT', 'DUSDT', 'FOOTBALLUSDT', 'GUAUSDT', 'IDOLUSDT', 'NATGASUSDT', 'NEIROUSDT', 'NUUSDT', 'PLAYUSDT', 'RAYSOLUSDT', 'RVVUSDT', 'TAKEUSDT', 'TRADOORUSDT', 'TSTUSDT'] | 37s
+window 2021-10-01 -> 2026-08-30 (1795 days)
+coverage of Binance top-100 coin-days in the window: Bybit perp exists 98.9% | in the set (filters incl. 2 M Bybit volume) 87.6% | mean set size 84.5
+
+===== N2 XFUND (registered) =====
+  annualised net +13.03 % on capital | NW t 2.16 | Sharpe 0.80 | max DD -27.08 pp | worst month -10.22 % | 1 h lag net +13.01 %/yr
+  years %: 2021: +6.39 (partial, < 6 months) | 2022: +4.50 | 2023: -0.98 | 2024: +6.83 | 2025: +57.60 | 2026: -10.29
+  P&L split %/yr: funding +19.82 | basis -1.89 | cost +4.91 | gross +17.93 | net +13.03
+  positions: mean open 4.23 | days with >= 1 open 87% | days at 10 18% | episodes 808 | median hold 7 d (mean 9.4) | trades/yr 327
+  daily net: mean +3.57 bp | median +0.00 bp | worst -16.24 % | worst 1 % mean -3.19 % | best +23.58 %
+  capacity: thinner venue's 30-day mean daily volume per held coin-day: median $23.8 M (10 % quantile $5.8 M)
+  margin stress: 370 of 808 episodes had a leg > 25% against entry
+    [x] annualised net >= 4.5 %
+    [ ] every year (>= 6 months) positive
+    [ ] worst month > -5 %
+    [x] NW t >= 2
+    [x] 1 h lag net > 0
+    [x] mean open positions >= 2
+  VERDICT N2: FAIL
+
+  info: |delta7| over set coin-days: median 0.0030 % | share >= 0.03 % 4.19% | >= 0.01 % 17.6%
+  info: mean open positions by year: 2021: 5.41 | 2022: 2.48 | 2023: 2.00 | 2024: 3.27 | 2025: 5.80 | 2026: 8.87
+  info: most traded coins (episodes): COTIUSDT 14, OMUSDT 12, PIPPINUSDT 12, TRBUSDT 12, MTLUSDT 11, RIVERUSDT 11, KAITOUSDT 10, HUSDT 9, ENJUSDT 8, LABUSDT 8
+
+===== FORWARD BLOCK from 2026-08-31 (30 days, unseen) =====
+  net -2.353 % (-28.63 %/yr) | mean open positions 6.77
+
+(55s)
