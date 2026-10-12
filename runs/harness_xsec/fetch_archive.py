@@ -3,6 +3,8 @@ monthly 1 h klines and monthly funding-rate files, 2020-01 .. END_MONTH. One par
 
     python fetch_archive.py [--symbols BTCUSDT,ETHUSDT] [--workers 16]
     python fetch_archive.py --spot --symbols-file ever_in_universe.json      (spot 1 h klines, for R5)
+    python fetch_archive.py --extend 2026-09                                 (append months >= 2026-09 to every
+                                                                              file; new listings fetched in full)
 
 Survivorship-free by construction: the symbol list is the archive's own directory listing, which keeps
 delisted contracts (LUNA, FTT, SRM, ...). Resumable: symbols already written are skipped.
@@ -21,7 +23,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "data", "xsec")
 S3 = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision"
 DL = "https://data.binance.vision/"
-START_MONTH, END_MONTH = "2020-01", "2026-08"
+START_MONTH, END_MONTH = "2020-01", "2026-09"
 SYM_RE = re.compile(r"^[A-Z0-9]+USDT$")
 KCOLS = ["open_time", "open", "high", "low", "close", "volume", "close_time", "quote_volume", "count",
          "taker_buy_volume", "taker_buy_quote_volume", "ignore"]
@@ -65,9 +67,13 @@ def read_zip_csv(blob, names):
     return df
 
 
-def month_ok(key):
+def month_in(key, lo):
     m = re.search(r"(\d{4}-\d{2})\.zip$", key)
-    return m is not None and START_MONTH <= m.group(1) <= END_MONTH
+    return m is not None and lo <= m.group(1) <= END_MONTH
+
+
+def month_ok(key):
+    return month_in(key, START_MONTH)
 
 
 def to_seconds(x):
@@ -108,12 +114,23 @@ def fetch_spot(sym):
     return sym, "ok", len(k)
 
 
-def fetch_symbol(sym):
+def append_parquet(path, new):
+    """Merge new rows into an existing parquet (new rows win on duplicate ts)."""
+    if os.path.exists(path):
+        new = pd.concat([pd.read_parquet(path), new], ignore_index=True)
+        new = new.drop_duplicates("ts", keep="last").sort_values("ts")
+    new.to_parquet(path, index=False)
+
+
+def fetch_symbol(sym, extend=False, from_month=START_MONTH):
     kp, fp = os.path.join(OUT, "klines", f"{sym}.parquet"), os.path.join(OUT, "funding", f"{sym}.parquet")
-    if os.path.exists(kp) and os.path.exists(fp):
+    if extend and not (os.path.exists(kp) and os.path.exists(fp)):
+        extend = False                   # listed after the original download: fetch every month
+    if not extend and os.path.exists(kp) and os.path.exists(fp):
         return sym, "cached", 0
+    lo = from_month if extend else START_MONTH
     keys = [k for k in list_prefix(f"data/futures/um/monthly/klines/{sym}/1h/", files=True)
-            if k.endswith(".zip") and month_ok(k)]
+            if k.endswith(".zip") and month_in(k, lo)]
     parts = []
     for k in sorted(keys):
         b = get(DL + k)
@@ -123,17 +140,17 @@ def fetch_symbol(sym):
         d = d.rename(columns={"taker_buy_quote_volume": "taker_buy_quote", "count": "trades"})
         parts.append(d[["open_time", "open", "high", "low", "close", "quote_volume", "taker_buy_quote", "trades"]])
     if not parts:
-        return sym, "no klines", 0
+        return sym, ("no new klines" if extend else "no klines"), 0
     k = pd.concat(parts, ignore_index=True)
     k["ts"] = (pd.to_numeric(k["open_time"]) // 1000).astype(np.int64)
     k = k.drop(columns="open_time").drop_duplicates("ts").sort_values("ts")
     for c in ("open", "high", "low", "close", "quote_volume", "taker_buy_quote"):
         k[c] = pd.to_numeric(k[c], errors="coerce").astype(np.float64)
     k["trades"] = pd.to_numeric(k["trades"], errors="coerce").fillna(0).astype(np.int64)
-    k[["ts", "open", "high", "low", "close", "quote_volume", "taker_buy_quote", "trades"]].to_parquet(kp, index=False)
+    append_parquet(kp, k[["ts", "open", "high", "low", "close", "quote_volume", "taker_buy_quote", "trades"]])
     fparts = []
     for fk in sorted(f for f in list_prefix(f"data/futures/um/monthly/fundingRate/{sym}/", files=True)
-                     if f.endswith(".zip") and month_ok(f)):
+                     if f.endswith(".zip") and month_in(f, lo)):
         b = get(DL + fk)
         if b is not None:
             fparts.append(read_zip_csv(b, ["calc_time", "funding_interval_hours", "last_funding_rate"]))
@@ -144,14 +161,15 @@ def fetch_symbol(sym):
         f = f.drop_duplicates("ts").sort_values("ts")
     else:
         f = pd.DataFrame({"ts": np.zeros(0, np.int64), "rate": np.zeros(0)})
-    f.to_parquet(fp, index=False)
-    return sym, "ok", len(k)
+    append_parquet(fp, f)
+    return sym, ("extended" if extend else "ok"), len(k)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbols", default=""); ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--spot", action="store_true"); ap.add_argument("--symbols-file", default="")
+    ap.add_argument("--extend", default="", help="YYYY-MM: append months >= this to existing files")
     a = ap.parse_args()
     if a.spot:
         os.makedirs(os.path.join(OUT, "spot"), exist_ok=True)
@@ -173,13 +191,13 @@ def main():
         print(f"archive symbols {len(allp)} -> USDT perps {len(syms)} | {time.time() - t0:.0f}s", flush=True)
     done = 0
     with ThreadPoolExecutor(a.workers) as ex:
-        for fu in as_completed([ex.submit(fetch_symbol, s) for s in syms]):
+        for fu in as_completed([ex.submit(fetch_symbol, s, bool(a.extend), a.extend or START_MONTH) for s in syms]):
             try:
                 s, st, n = fu.result()
             except Exception as e:
                 print(f"  ERROR {e}", file=sys.stderr); continue
             done += 1
-            if done % 50 == 0 or st not in ("ok", "cached"):
+            if done % 50 == 0 or st not in ("ok", "cached", "extended", "no new klines"):
                 print(f"  {done}/{len(syms)} {s}: {st} {n} | {time.time() - t0:.0f}s", flush=True)
     print(f"done {done}/{len(syms)} in {time.time() - t0:.0f}s")
 

@@ -2,7 +2,7 @@
 
 *Written 2026-10-01 as the programme's closing document; updated 2026-10-05 with Round 4 (§2.4: daily trend-following R6 and the
 hedged low-volatility factor R4b, both FAIL) and 2026-10-06 with two post-close probes (§2.5: the DVOL variance-premium check V1 and the
-borrow-rate check R9). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
+borrow-rate check R9) and 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
 comes from a write-up in `runs/`, listed in §8, and every result there is reproducible from a harness
 or an executed notebook in this repository.*
 
@@ -114,6 +114,23 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
   bars it is still DEAD: every VIP0 borrow limit is $1.5k–5.6k per coin (needed ≥ 3 coins at ≥ $50k) and 2024 is −0.51 % (needed every year 2021–2025 positive). It is a small-account,
   capacity-bound carry resting on today's rates, which probably flatter the history (borrow demand spikes in squeezes; delisted coins excluded). A snapshot script
   (`harness_xsec/snapshot_borrow.py`) builds a rate history when run (manually; the cron schedule was removed because the machine is not always on).
+
+### 2.6 Round 6 (2026-10-12): funding-settlement event study N4
+
+- **Test.** Does price move around an extreme funding settlement? (`n4_settlement.analysis.md`; pre-registered in `next_signal_ideas.md` Round 6, committed before
+  any code.) Every settlement of a top-100 coin whose previous rate had |r| ≥ 0.10 %, 2021-05-22 → 2026-08-30, 1 h bars, 9 bp round trip.
+- **POST: PASS on every registered criterion** (first pass since the close). Trade the paying side for the hour after the settlement (mostly short into strongly
+  negative funding).
+  - **+25.4 bp net per event**, CI [18.4, 32.4], clustered by settlement time; event − placebo +33.4 bp; n = 20,847.
+  - **PRE** (receiver side before the settlement): FAIL.
+- **Post-hoc checks.**
+  - **For:** not a bounce artifact (the jump across the settlement print is 0.4 bp); the effect decays within ~2 h; it rises with |rate|; it is spread over 465 coins.
+  - **Against:**
+    - only from 2023 (2021–22 slightly negative), with 73 % of events in 2025–26;
+    - spread and slippage are not in the cost;
+    - squeeze tails (worst event −130 %, worst 1 % −19 %);
+    - one forward month (September 2026) uninformative at +6.8 bp, CI [−15.9, +30.5].
+- **Next stages, frozen before any newer data:** a forward ledger (N4-F) and a minute-scale execution check with a 19 bp all-in cost (N4-X).
 
 ## 3. Why: the arithmetic that kept recurring
 

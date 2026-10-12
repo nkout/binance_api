@@ -762,6 +762,33 @@ klines for the prior 30 days and ≥ 2 M USD mean daily Bybit volume.
 Bybit is chosen as the first venue because both venues are USDT-margined at VIP0. OKX and Hyperliquid (USDC, hourly funding) would be a
 new registration.
 
-### Status (2026-10-08)
+### Status (2026-10-12)
 
-Pre-registered only. Next: N1 and N4 harness code + synthetic tests (`harness_xsec/`), archive extension, then the runs.
+- Archive extended to 2026-09-30 (`fetch_archive.py --extend 2026-09`; 895 symbols).
+- **N4 run: POST PASS, PRE FAIL** (`n4_settlement.analysis.md`).
+  - POST: +25.4 bp net per event, CI [18.4, 32.4]; event − placebo +33.4; n 20,847.
+  - Forward month September 2026: +6.8 bp, CI [−15.9, +30.5], uninformative.
+- N1 and N2 not yet built.
+
+### N4 follow-up — forward ledger and minute-scale execution check (pre-registered 2026-10-12, before any data after 2026-09-30)
+
+The rule is frozen exactly as registered for POST. Events: |r_prev| ≥ 0.10 %, top 100, R4 eligibility, membership from the day starting ≤ s − 3h. Trade −q from
+s to s + 1h, 9 bp round trip. Nothing is re-tuned. The 2 h hold and the |r| ≥ 0.5 % bucket seen in the diagnostics are not used.
+
+**N4-F forward ledger.**
+- **Window:** settlements from 2026-10-01 on, scored after each monthly `fetch_archive.py --extend`. September 2026 has already been seen, so it is reported
+  separately and is not part of the forward verdict.
+- **First checkpoint:** ≥ 4 forward months and ≥ 5,000 events.
+  - CONFIRMED if net mean > 0 with clustered-bootstrap 95 % CI lower bound > 0, and median > 0.
+  - FAILED if net mean ≤ 0.
+  - Otherwise continue.
+- **Final:** at 12 forward months, the same rule. CI lower bound > 0 → CONFIRMED, else FAILED.
+- Reported every time: event − placebo, the per-sign legs, worst event, worst 1 %.
+
+**N4-X execution check (1-minute data).**
+- **Sample:** 2,000 registered events drawn at random (seed 0) from 2025-01-01 → 2026-08-30, using Binance daily 1-minute futures klines for those coin-days.
+- **Executable entry:** the open of the minute starting at s + 2 min, so the order is placed after the settlement print is visible. Exit at the close at s + 1h.
+- **Cost:** 9 bp fee + a fixed 10 bp round trip allowance for spread and slippage, 19 bp in total.
+- **PASS:** net mean > 0 with clustered CI lower bound > 0, and median > 0.
+- **Reported:** the mean cumulative signed path minute by minute (0–120 min), and the same with entry at s + 1, 5 and 15 min (information).
+- **FAIL** → the effect is not capturable by a retail taker. N4 is closed regardless of N4-F.

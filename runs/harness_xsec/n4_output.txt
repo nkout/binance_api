@@ -1,0 +1,107 @@
+loaded 892 symbols, 59160 hours, 24s
+funding calc_time minus rounded hour: min 0 s, max 1 s, share |off| > 60 s: 0.00000
+extreme events in universe: 21765 (1 dropped for a missing bar) | 35s
+first day with a top-100 universe: 2021-05-22
+
+=== REGISTERED  2021-05-22 .. 2026-08-30  (|r_prev| >= 0.10%, cost 9.0 bp RT) ===
+
+-- PRE  ->  FAIL
+  net (bp)            -7.89  95% CI [-14.07,  -1.43]  p 0.0140  (n 20847, 9694 settlement clusters)
+  event - placebo     -7.40  95% CI [-17.86,   2.68]  p 0.1620
+  Holm p (arm)      0.1620
+  net      n  20847 | mean   -7.89 | median   -9.00 | trimmed   -7.80 | worst  -8137.5 | q01 -1166.4 | worst-1% mean -2055.8
+  placebo  n  20847 | mean   -0.49 | median  -15.09 | trimmed   -4.96 | worst  -8255.2 | q01 -1193.3 | worst-1% mean -2119.7   (placebo net of 9 bp)
+  years    2021:   4.48 (n 1108) | 2022:  24.11 (n 1641) | 2023:  10.73 (n 1519) | 2024:   7.28 (n 1323) | 2025:  -3.79 (n 5855) | 2026: -22.62 (n 9401)   -> 4/6 positive
+  sign legs rate>0:   4.96 | rate<0:  -9.13
+    [ ] net mean > 0
+    [ ] net CI lo > 0
+    [ ] event - placebo > 0
+    [ ] event - placebo CI lo > 0
+    [x] years positive >= 4/6
+    [ ] both sign legs >= 0
+    [x] n >= 300
+    [ ] Holm p < 0.05
+
+-- POST  ->  PASS
+  net (bp)            25.44  95% CI [ 18.37,  32.42]  p 0.0005  (n 20847, 9694 settlement clusters)
+  event - placebo     33.42  95% CI [ 23.74,  43.55]  p 0.0005
+  Holm p (arm)      0.0010
+  net      n  20847 | mean   25.44 | median   19.26 | trimmed   23.30 | worst -12955.0 | q01 -1119.6 | worst-1% mean -1930.5
+  placebo  n  20847 | mean   -7.97 | median   -4.00 | trimmed   -8.22 | worst -21675.7 | q01 -1131.6 | worst-1% mean -2055.9   (placebo net of 9 bp)
+  years    2021:  -1.77 (n 1108) | 2022:  -6.37 (n 1641) | 2023:  27.13 (n 1519) | 2024:  32.77 (n 1323) | 2025:  24.86 (n 5855) | 2026:  33.26 (n 9401)   -> 4/6 positive
+  sign legs rate>0:  49.94 | rate<0:  23.07
+    [x] net mean > 0
+    [x] net CI lo > 0
+    [x] event - placebo > 0
+    [x] event - placebo CI lo > 0
+    [x] years positive >= 4/6
+    [x] both sign legs >= 0
+    [x] n >= 300
+    [x] Holm p < 0.05
+
+=== Blind / drift: unsigned mean raw return (bp) over the same bars ===
+  PRE bar  -1.35 | POST bar -24.05 | placebo PRE bar   6.87 | placebo POST bar  -3.43
+
+=== Splits (gross / net / placebo / event - placebo, bp) ===
+
+PRE by rate_sign
+               n  gross   net  placebo  diff
+rate_sign                                   
+rate<0     19009  -0.13 -9.13     8.43 -8.56
+rate>0      1838  13.96  4.96     9.35  4.62
+
+PRE by interval
+             n  gross    net  placebo   diff
+interval                                    
+1h        6827 -24.18 -33.18    24.95 -49.12
+4h        8291   8.71  -0.29    -3.80  12.51
+8h        5480  19.10  10.10     4.27  14.84
+other      249  45.66  36.66    61.36 -15.71
+
+PRE by year
+         n  gross    net  placebo   diff
+year                                    
+2021  1108  13.48   4.48     3.71   9.77
+2022  1641  33.11  24.11    30.23   2.88
+2023  1519  19.73  10.73    -1.30  21.04
+2024  1323  16.28   7.28   -15.53  31.80
+2025  5855   5.21  -3.79    11.82  -6.61
+2026  9401 -13.62 -22.62     8.20 -21.82
+
+POST by rate_sign
+               n  gross    net  placebo   diff
+rate_sign                                     
+rate<0     19009  32.07  23.07     2.44  29.63
+rate>0      1838  58.94  49.94   -13.64  72.59
+
+POST by interval
+             n   gross    net  placebo   diff
+interval                                     
+1h        6827   26.22  17.22    17.92   8.29
+4h        8291   50.53  41.53   -11.89  62.42
+8h        5480   17.29   8.29    -3.40  20.69
+other      249  101.67  92.67    65.08  36.59
+
+POST by year
+         n  gross    net  placebo   diff
+year                                    
+2021  1108   7.23  -1.77     7.67  -0.44
+2022  1641   2.63  -6.37    -1.73   4.36
+2023  1519  36.13  27.13   -11.42  47.55
+2024  1323  41.77  32.77   -12.52  54.29
+2025  5855  33.86  24.86    -0.83  34.69
+2026  9401  42.26  33.26     5.80  36.46
+
+=== Lag row ===
+  PRE: its lag row is the placebo (see above). POST is PRE entered one hour later.
+
+=== INFORMATION: signed by the settled rate r_s (not causal, not tradeable) ===
+  PRE  net n  20599 | mean   10.36 | median   -1.56 | trimmed   11.57 | worst -12955.0 | q01 -1253.4 | worst-1% mean -2298.6   placebo gross  20.16
+  POST  net n  20599 | mean   25.34 | median   23.60 | trimmed   24.05 | worst -12955.0 | q01 -1220.8 | worst-1% mean -2076.2   placebo gross   2.76
+
+=== FORWARD BLOCK (settlements from 2026-08-31, seen by no study; descriptive) ===
+  PRE  net n    917 | mean  -16.25 | median  -13.17 | trimmed  -19.51 | worst  -3458.3 | q01 -1057.6 | worst-1% mean -1685.2   event - placebo   7.84
+  POST  net n    917 | mean    6.76 | median   19.38 | trimmed    9.70 | worst  -3179.3 | q01 -1186.5 | worst-1% mean -1773.8   event - placebo   2.47
+  forward events 917, last settlement 2026-09-30 20:00:00
+
+VERDICT: PASS   (43s)
