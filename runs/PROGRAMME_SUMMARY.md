@@ -130,7 +130,11 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
     - spread and slippage are not in the cost;
     - squeeze tails (worst event −130 %, worst 1 % −19 %);
     - one forward month (September 2026) uninformative at +6.8 bp, CI [−15.9, +30.5].
-- **Next stages, frozen before any newer data:** a forward ledger (N4-F) and a minute-scale execution check with a 19 bp all-in cost (N4-X).
+- **N4-X, the minute-scale execution check (registered before the run): FAIL → N4 CLOSED.**
+  - On 2,000 sampled 2025–26 events, about 26 bp of the hour's 43 bp move happens in the **first minute** after the settlement.
+  - An order at s + 2 min nets +0.8 bp at 19 bp all-in, CI [−18.7, +20.7], median −8.1. Fee-only it is +10.8, CI includes 0.
+  - The effect is real but priced within a minute: a latency race (as R1), not a retail taker trade.
+  - Lesson: a 1 h bar cannot show *when* inside the hour a move happens. Check minute resolution before believing an hourly event result.
 
 ## 3. Why: the arithmetic that kept recurring
 

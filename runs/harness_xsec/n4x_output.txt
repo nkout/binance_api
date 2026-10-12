@@ -1,0 +1,40 @@
+pool 15256 registered events 2025-01-01 .. 2026-08-30 -> sample 2000 (241 coins, 1717 settlement times) | 32s
+1 m coin-days needed 1482: {'ok': 1482} | 141s
+reconciliation with the 1 h archive: P(s+1h) mismatches > 1e-9: 0, P(s): 0 (of 2000 / 2000 comparable)
+
+=== REGISTERED: entry O(s + 2 min), exit P(s + 1h), cost 19.0 bp all-in ===
+  net 0.78 bp  95% CI [-18.73, 20.65]  p 0.9180 | median -8.11 | trimmed -5.01 | worst -4557 | worst-1% mean -2028 | n 2000 (missing 0)
+    [x] net mean > 0
+    [ ] net CI lo > 0
+    [ ] median > 0
+  VERDICT N4-X: FAIL
+
+=== Information (gross bp unless noted) ===
+  sample, N4 1 h POST gross          mean   42.79 [  23.23,   62.18] | median   29.21 | trimmed   36.29 | n 2000
+  entry s + 1 min gross              mean   17.44 [  -1.90,   37.19] | median   12.68 | trimmed   11.84 | n 2000
+  entry s + 2 min gross              mean   19.78 [   0.27,   39.65] | median   10.89 | trimmed   13.99 | n 2000
+  entry s + 5 min gross              mean   15.28 [  -3.67,   34.01] | median    6.58 | trimmed    8.66 | n 2000
+  entry s + 15 min gross             mean   10.35 [  -5.65,   26.82] | median    6.40 | trimmed    4.86 | n 2000
+  entry s + 2 min, fee only (9 bp) net mean   10.78 [  -8.73,   30.65] | median    1.89 | trimmed    4.99 | n 2000
+
+  mean signed path from P(s) (bp, paying direction), clustered CI:
+  path(  1 min)                      mean   25.79 [  22.46,   28.98] | median   16.08 | trimmed   24.99 | n 2000
+  path(  2 min)                      mean   23.50 [  19.10,   27.84] | median   16.89 | trimmed   23.06 | n 2000
+  path(  3 min)                      mean   25.48 [  20.76,   30.32] | median   18.31 | trimmed   24.76 | n 2000
+  path(  5 min)                      mean   27.39 [  21.59,   33.13] | median   21.44 | trimmed   26.52 | n 2000
+  path( 10 min)                      mean   30.36 [  22.83,   38.41] | median   23.37 | trimmed   29.31 | n 2000
+  path( 15 min)                      mean   33.09 [  22.82,   44.41] | median   23.69 | trimmed   29.80 | n 2000
+  path( 30 min)                      mean   39.58 [  25.24,   53.99] | median   24.62 | trimmed   35.06 | n 2000
+  path( 45 min)                      mean   41.90 [  24.64,   58.85] | median   28.09 | trimmed   37.29 | n 2000
+  path( 60 min)                      mean   42.79 [  23.23,   62.18] | median   29.21 | trimmed   36.29 | n 2000
+  path( 75 min)                      mean   53.57 [  31.89,   75.79] | median   31.51 | trimmed   46.69 | n 2000
+  path( 90 min)                      mean   53.02 [  27.16,   77.92] | median   35.84 | trimmed   51.40 | n 2000
+  path(120 min)                      mean   51.93 [  21.99,   81.10] | median   43.16 | trimmed   49.12 | n 2000
+
+  by funding sign (registered net):
+  rate<0 (short)                     mean   -5.67 [ -24.21,   14.01] | median   -8.65 | trimmed   -8.60 | n 1875
+  rate>0 (long)                      mean   97.64 [ -13.22,  224.45] | median    2.19 | trimmed   67.71 | n 125
+  year 2025                          mean  -11.92 [ -43.04,   20.95] | median   -7.97 | trimmed   -9.79 | n 739
+  year 2026                          mean    8.23 [ -17.63,   33.33] | median   -8.74 | trimmed   -1.75 | n 1261
+
+(163s)

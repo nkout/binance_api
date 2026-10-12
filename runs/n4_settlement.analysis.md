@@ -1,10 +1,15 @@
-# N4 funding-settlement event study — POST arm PASSES by the registered letter; PRE fails
+# N4 funding-settlement event study — POST passed on 1 h bars, then FAILED the 1-minute execution check (N4-X): the move is in the first minute. N4 is CLOSED
 
 *2026-10-12. Harness `runs/harness_xsec/` (`settle.py`, `run_n4.py`, `test_settle.py` 20/20 PASS; xsec, lowvol, carry tests unchanged). Results
 `harness_xsec/n4_results.json`, `n4_output.txt`; post-hoc diagnostics `n4_diagnostics.py` → `n4_diagnostics.txt`. Pre-registration: `next_signal_ideas.md`,
 Round 6 / N4 (committed 304d068 before any code). Archive extended to 2026-09-30 first (`fetch_archive.py --extend 2026-09`). Local CPU, ~45 s per run.*
 
-**TLDR.**
+**Update 2026-10-12, N4-X (§5): FAIL → N4 closed.**
+- Re-priced on 1-minute data for 2,000 sampled 2025–26 events, about 26 bp of the hour's 43 bp move happens **in the first minute after the settlement**.
+- Entering at s + 2 min leaves +19.8 bp gross. Net of 19 bp all-in that is **+0.8 bp**, CI [−18.7, +20.7], median −8.1.
+- The 1 h result was real price movement, but a retail taker cannot capture it. It is a latency race, the R1 territory.
+
+**TLDR (1 h study, before N4-X).**
 - **POST passes every registered criterion.** The trade: right after an extreme settlement (|previous rate| ≥ 0.10 %), take the paying side for one hour, i.e.
   short a coin whose funding is strongly negative and long one whose funding is strongly positive.
   - **+25.4 bp net per event**, 95 % CI [18.4, 32.4], clustered by settlement time. n = 20,847 across 9,694 settlement timestamps.
@@ -117,3 +122,56 @@ The pre-registration says nothing about promotion after a PASS. Following the pr
 
 Both get pre-registered in `next_signal_ideas.md` before any data after 2026-09-30 is fetched. No parameter (threshold, holding time, universe) changes.
 The 2-hour hold and the |r| ≥ 0.5 % bucket look better, but they were found after the fact, so they are information only.
+
+## 5. N4-X — minute-scale execution check: FAIL (2026-10-12)
+
+*`n4x.py`, `run_n4x.py`, `test_n4x.py` 9/9 PASS. Results `n4x_results.json`, `n4x_output.txt`, `n4x_sample.csv`. 1-minute data `data/xsec/min1/` (1,482 coin-days,
+none missing). The minute prices match the 1 h archive exactly at s and s + 1h for all 2,000 events.*
+
+**Sample.**
+- 2,000 events drawn at random (seed 0) from the 15,256 registered events 2025-01-01 → 2026-08-30.
+- 241 coins, 1,717 settlement times.
+- The sample's 1 h POST gross is +42.8 bp, so the sample is representative or slightly favourable.
+
+| registered: entry O(s + 2 min), exit P(s + 1h), 19 bp all-in | value |
+|---|---|
+| net mean | **+0.78 bp**, 95 % CI [−18.7, +20.7] |
+| median / trimmed | −8.1 / −5.0 |
+| worst / worst-1 % mean | −4,557 / −2,028 |
+| criteria | mean > 0 ✓ · CI lower bound > 0 ✗ · median > 0 ✗ → **FAIL** |
+
+**Signed path from P(s), paying direction (mean, bp; information):**
+
+| minute | 1 | 2 | 5 | 15 | 30 | 60 | 90 | 120 |
+|---|---|---|---|---|---|---|---|---|
+| mean | 25.8 | 23.5 | 27.4 | 33.1 | 39.6 | 42.8 | 53.0 | 51.9 |
+| median | 16.1 | 16.9 | 21.4 | 23.7 | 24.6 | 29.2 | 35.8 | 43.2 |
+
+- **About 60 % of the hour's mean move, and more than half of the median move, happens within one minute of the settlement.** The 1 h "entry at the first trade after s"
+  diagnostic (§2) could not see this: the bar's open is the first trade after s, and it sits before the jump. The jump happens inside the first minute.
+- **Gross by entry minute:**
+
+  | entry | gross mean | CI |
+  |---|---|---|
+  | s + 1 min | 17.4 | — |
+  | s + 2 min | 19.8 | [0.3, 39.7] |
+  | s + 5 min | 15.3 | — |
+  | s + 15 min | 10.4 | — |
+
+  Fee-only (9 bp) net at s + 2 min is +10.8, CI [−8.7, +30.7], median +1.9. Even with zero spread it is not significant.
+- **The slow part afterwards is real but small.** It adds about 20 bp gross over the hour from minute 2, with a wide CI. It continues to about 90 minutes, but at 19 bp
+  all-in it is about zero.
+- **By sign:**
+  - Rate < 0 shorts (94 %): −5.7 net.
+  - Rate > 0 longs: +97.6, but n = 125 and the CI includes 0.
+- **By year:** 2025 −11.9, 2026 +8.2. Neither is significant.
+
+**Verdict.** **N4-X FAIL.** By the registered rule (FAIL → N4 closed regardless of N4-F), **N4 is closed.** The forward ledger N4-F is not started.
+
+The settlement effect is real, but it is priced within about a minute, by participants faster than a retail taker. A sub-minute version would be a latency strategy.
+The programme already showed that is out of reach (R1). It is not re-registered.
+
+**Not promoted (seen after the fact):**
+- the rate > 0 long leg;
+- a longer hold from s + 2 min;
+- the |r| ≥ 0.5 % bucket.

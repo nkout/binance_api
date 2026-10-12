@@ -768,6 +768,10 @@ new registration.
 - **N4 run: POST PASS, PRE FAIL** (`n4_settlement.analysis.md`).
   - POST: +25.4 bp net per event, CI [18.4, 32.4]; event − placebo +33.4; n 20,847.
   - Forward month September 2026: +6.8 bp, CI [−15.9, +30.5], uninformative.
+- **N4-X FAIL → N4 CLOSED** (`n4_settlement.analysis.md` §5).
+  - About 26 of the hour's 43 bp move happen in the first minute after the settlement.
+  - Entry at s + 2 min nets +0.8 bp at 19 bp all-in, CI [−18.7, +20.7], median −8.1.
+  - N4-F is not started.
 - N1 and N2 not yet built.
 
 ### N4 follow-up — forward ledger and minute-scale execution check (pre-registered 2026-10-12, before any data after 2026-09-30)
