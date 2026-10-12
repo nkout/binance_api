@@ -820,3 +820,123 @@ s to s + 1h, 9 bp round trip. Nothing is re-tuned. The 2 h hold and the |r| ≥ 
 - **PASS:** net mean > 0 with clustered CI lower bound > 0, and median > 0.
 - **Reported:** the mean cumulative signed path minute by minute (0–120 min), and the same with entry at s + 1, 5 and 15 min (information).
 - **FAIL** → the effect is not capturable by a retail taker. N4 is closed regardless of N4-F.
+
+## Round 7 — N5: drift after a new token's Binance perp listing (pre-registered 2026-10-12, before any code)
+
+Context: Round 6 is complete with nothing tradeable (`PROGRAMME_SUMMARY.md` §2.6). The programme's edges failed because they were too fast to trade (R1, N4), too
+small in capacity (`CARRY+`, R9), or unstable across years (N1, N2, R5, V1). N5 is chosen to avoid all three:
+- daily horizon;
+- a flow of events that grows over time;
+- a cause that is structural, not a regime: new tokens list with a small float, and supply then unlocks into them.
+
+### Facts fixed before writing (no prices or funding looked at)
+
+**Listings.** The first 1 h bar of each Binance USDT-M perp in the archive.
+- 11 symbols already existed in January 2020; 2 bases were re-listed under a new name or multiplier.
+- `exchangeInfo` dates match the first bar to within hours.
+
+**Excluded from the crypto universe:**
+- 211 `TradFi` perps (equities and commodities, 2026; `underlyingSubType` = TradFi);
+- 1 index perp.
+
+All 2026 listings are still in `exchangeInfo`, so the tag is complete. Delisted symbols are all pre-TradFi crypto.
+
+**"New token".** No Binance spot pair, or a spot pair whose first monthly archive file is at most 3 months before the perp's listing month.
+- Source: the archive directory listing; 471 of 892 symbols have spot.
+- Seasoned coins (spot > 3 months earlier, median 21 months) are excluded. They form an information arm.
+
+**Liquidity.** Binance perp quote volume in the 24 h before entry ≥ $5 M.
+
+**Event counts:**
+
+| year | crypto perp listings | new tokens | new, ≥ $5 M | seasoned |
+|---|---|---|---|---|
+| 2020 | 69 | 37 | 29 | 32 |
+| 2021 | 58 | 25 | 23 | 33 |
+| 2022 | 26 | 15 | 15 | 11 |
+| 2023 | 98 | 42 | 42 | 56 |
+| 2024 | 131 | 96 | 96 | 35 |
+| 2025 | 238 | 225 | 224 | 13 |
+| 2026 | 47 | 47 | 46 | 0 |
+
+- **472 events** have entry + 28 d ≤ 2026-08-31.
+- Only 1 event fits the forward block (exit by 2026-09-30) for H = 28; a handful fit for H = 14.
+- 3 events stop trading within 28 days of entry.
+
+**Caveat (fixed now).** A token's history on other venues is not visible. A "new" Binance perp can be a coin that traded elsewhere for years, which mostly
+affects 2020–22.
+
+### Hypothesis
+
+New tokens list with a small circulating float and a large locked supply. Airdrop recipients, early investors and market makers sell into the listing demand
+over the following weeks. So a new perp underperforms BTC over its first weeks by more than a seasoned alt does on the same dates.
+
+### Construction (one primary cell)
+
+**Entry.**
+- At the first 00:00 UTC that is ≥ 48 h after the listing L. This skips the listing frenzy, and the entry time is known in advance.
+- Liquidity filter: ≥ $5 M perp quote volume in the 24 h before entry.
+
+**Trade.**
+- Short the new perp and long the BTC perp at equal notional (β = 1, fixed: a new coin has no history to estimate beta from).
+- **H = 14 days primary.** H = 7 and H = 28 are information.
+- Exit at 00:00 of entry + H.
+
+**Delisting / stop.** The archive prints flat zero-volume bars after a delisting. The event is closed at the coin's last traded price (`xfund.death_hour`), and the BTC
+leg at the same hour.
+
+**Event P&L (buy-and-hold over the hold), per unit notional:**
+- Short leg: −(P_exit / P_entry − 1) + funding received by a short.
+- Long BTC leg: (BTC_exit / BTC_entry − 1) − funding paid by a long.
+- Costs: 4.5 bp × 4 sides = **18 bp**.
+
+**Portfolio view (for the capital criteria).**
+- Each event uses 2 % of capital notional on each leg.
+- At most 25 events open at once; later events are skipped and the count is reported.
+- Daily marking on constant notional (as R5 / N2). Idle capital earns 0.
+
+### Controls
+
+- **Seasoned control (the N1 lesson).** For each event over the same dates: short an equal-weight basket of Binance top-100 perps aged ≥ 365 days (ex-BTC), long
+  BTC at β = 1, same costs. Event − control isolates the listing effect from an alts-vs-BTC regime.
+- **Blind:** unhedged short of the new coin. **Lag row:** entry at 01:00.
+- **Statistics:** median vs mean, trimmed mean (1 % each tail), worst event, worst 1 % of events.
+- **Inference:** bootstrap clustered by **entry ISO week**, because events in the same week share market moves.
+- **Tables:** per year; per entry-day volume tercile; by token type (`underlyingSubType`, information).
+- **Tests before the real run:**
+  - leak test (nothing after the entry moves a decision);
+  - P&L identity by hand;
+  - delisting closure;
+  - a planted world that passes;
+  - ≥ 10 null worlds that pass ≤ 1 time;
+  - a world with an alts-vs-BTC drift but no listing effect, which must fail the control criterion.
+- **Information arms (never promoted):** H = 7 and H = 28; seasoned listings; liquidity floors $2 M and $10 M; entry at L + 24 h.
+
+### Power, stated before the run
+
+- If the 14-day hedged event return has sd ≈ 35 %, then n ≈ 470 gives SE ≈ 1.6 %, and ≈ 2 % with clustering.
+- The CI clears 0 only for a mean of ≳ 4 % per event.
+- The portfolio (≈ 100 events a year × 2 %) earns ≈ 2 × the mean per event per year, so 4 % per event ≈ 8 %/yr.
+- 2024–25 hold 320 of the 472 events, so the per-year criterion is the binding one for older years.
+
+### PASS (all required, H = 14 cell)
+
+1. Event net mean > 0, with clustered-bootstrap 95 % CI lower bound > 0.
+2. Event median > 0 and trimmed mean > 0.
+3. Event − seasoned control > 0, with CI lower bound > 0.
+4. Event net mean positive in every calendar year with ≥ 20 events except at most one (years: 2020, 2021, 2023, 2024, 2025, 2026; 2022 has 15).
+5. 1 h lag row net mean > 0.
+6. Portfolio:
+   - annualised net ≥ 4.5 % on capital;
+   - NW t ≥ 2;
+   - worst month > −5 %;
+   - worst day > −5 %.
+7. n ≥ 300.
+
+**Kill.** If any criterion fails, N5 is dead. The drift after a new token's perp listing, if it exists, is not a stable, harvestable premium after funding and
+squeezes. Nothing (threshold, H, entry delay, filters) is re-tuned. A variant would be a new pre-registration scored only on data after 2026-09-30.
+
+### Status (2026-10-12)
+
+Pre-registered only. Next: `harness_xsec/listing.py` + `test_listing.py` (synthetic worlds), then `run_n5.py`. Metadata inputs to save with the harness:
+the spot first-month map and the `exchangeInfo` snapshot (TradFi / index tags).
