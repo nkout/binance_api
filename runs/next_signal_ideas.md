@@ -599,3 +599,169 @@ rests on today's rates; the signed history (read-only key) is still open. `r9_bo
 cross-margin asset, mark price and last funding rate for every USDT perp, and the S1 candidates with FUND7. Run it by hand (or from an always-on host) whenever possible: the first success of each UTC day is kept, later runs that day skip without
 fetching, failures exit 1 and write nothing; log `data/borrow_history/snapshot.log`. Gaps are tolerable for the purpose but shrink the sample. About 15 KB a day. `data/` is not in git. Use: after ~90 days, re-price
 `CARRY−` on the live candidates with the rates actually paid, and forward-score it; until then the R9 verdict stands as registered.
+
+---
+
+## Round 6 — after the programme close: three new return sources (pre-registered 2026-10-08, before any code)
+
+Context: `PROGRAMME_SUMMARY.md`. BTC direction is closed at every horizon. The rank signals were real but the short legs sank on pumps.
+The only positive sources were collected premia (carry, VRP), and they were capped by capacity (R5: ~1 hedgeable position; R9: borrow
+limits $1.5–5.6k per coin). Round 6 tests three ideas that avoid all four failure modes. Order: **N1 → N4** (same harness, data on disk,
+minutes each) **→ N2** (needs a new fetcher). Deferred: N3 basis-spike convergence, N5 listing / unlock drift, N6 BTC → alt lead-lag at
+1 min, N7 post-pump decay.
+
+**Facts fixed before writing this (no returns looked at):**
+- **Eligible coins per day** (R4 eligibility: ≥ 60 days listed, complete 30-day 1 h data, not stable / index).
+  - Thresholds: ≥ 100 from 2021-05-22 · ≥ 150 from 2023-04-05 · ≥ 200 from 2023-11-26 · ≥ 250 from 2024-04-07.
+  - Yearly median: 109 (2021) · 136 · 174 · 256 · 400 · 540 (2026).
+- **Funding interval mix** (share of settlements at 8 h / 4 h / 1 h).
+  - 8 h: ≈ 100 % in 2020–22 · 91 % in 2023 · 48 % in 2024 · 20 % in 2025 · 17 % in 2026.
+  - 4 h: 9 % in 2023 · 52 % in 2024 · 73 % in 2025 · 80 % in 2026.
+  - 1 h: 7 % in 2025, 3 % in 2026.
+  - Anything defined "at 00/08/16 UTC" therefore misses most settlements after 2023, so N4 is defined per settlement event.
+- **Already seen, so not evidence for N1** (R4b, `r4b_output.txt`).
+  - Ranks 41–100: the beta-hedged equal-weight alt basket lost −9.4 bp/day (NW t −1.62, sd 2.48 %/day, 1 of 5 blocks positive).
+  - Ranks 1–40: the same control was **+0.0 bp/day**.
+- **Archive end.** The perp archive ends 2026-08-30. Before any N1 / N4 run, the archive is extended with `fetch_archive.py` to the
+  latest complete month. Days after 2026-08-30 have been seen by no study, so they are reported as a separate **forward block**
+  (descriptive; the verdict uses the registered window).
+
+**Controls common to N1, N4 and N2** (the programme's lessons, §6 of the summary):
+- Tests written and passing before the real run: look-ahead / leak test, exact P&L identity, a planted-effect world that passes, and
+  ≥ 10 null worlds that pass ≤ 1 time.
+- 4.5 bp per side taker cost on Binance, funding as real P&L, and a 1 h execution-lag row.
+- Median vs mean, trimmed mean (1 % each tail), worst day / event and worst 1 %, per-year table, NW t.
+- Holm correction across each idea's registered cells.
+- Parameters are fixed here. Nothing is tuned. Information arms are not promoted after the fact.
+
+### N1 — long BTC / short a diversified mid-cap alt basket, beta-neutral
+
+**Hypothesis.** After removing BTC beta, mid-cap perps lose to BTC: token emissions and unlocks keep diluting them, and long-biased
+retail crowds them. The idea came from R4b's control. That control ran on ranks 41–100, so those ranks are information only. The test
+uses coins R4b never held.
+
+**Construction (one primary cell).**
+- **Universe.** Point-in-time **volume ranks 101–200**, R4 eligibility, BTC excluded. The study starts on the first day with ≥ 200
+  eligible coins (2023-11-26), plus a 60-day beta warm-up, and runs to 2026-08-30 (≈ 950 days).
+- **Short book.** Weights ∝ 1 / RVOL30 over the 100 coins, normalised to a total of 1, **capped at 2 % per coin** with the excess
+  redistributed (the `lowvol.inv_vol_weights` routine). A coin is skipped if RVOL30 is missing. The book is formed only when ≥ 90 coins
+  have a value.
+- **Hedge.** Long BTC perp at notional β_d, where β_d is the OLS slope of the short book's daily total return on BTC's over
+  d − 60 … d − 1 (the `lowvol.hedged_book` routine with the long leg empty).
+- **Holding.** H = 7 staggered cohorts (one cell; H = 1 as information).
+- **Accounting.** Funding is P&L on every leg (shorts usually receive it), 4.5 bp per side on all turnover including the hedge, and a
+  1 h lag row. Returns are on the short notional (= 1).
+
+**Information arms (reported, not part of the verdict).**
+- Equal-weight short of the same universe.
+- Ranks 41–100, the reverse of the R4b control: a replication of what has already been seen.
+- Ranks 1–40.
+- P&L decomposition: alt price, alt funding, BTC price, BTC funding, costs.
+- Largest single-coin daily loss contribution, and the 10 worst days with the coin responsible.
+
+**Power, stated before the run.** At R4b's effect size (9.4 bp/day) and dispersion (2.48 %/day), 950 days give an expected NW t of
+≈ 1.2. A historical t ≥ 2 needs ≈ 16 bp/day. **The history can kill this idea but is unlikely to confirm it**, so the verdict has three
+outcomes.
+
+**Verdict (H = 7 cell).**
+
+**PASS** requires all of the following:
+- net mean > 0 with NW t ≥ 2;
+- median and mean both > 0;
+- trimmed mean > 0;
+- ≥ 4 of the 5 consecutive 182-day blocks positive;
+- 1 h lag net > 0;
+- worst day > −20 % of the short notional.
+
+**ALIVE → forward test** if PASS fails only on the t-stat, with 1 ≤ t < 2. Then the frozen rule is scored forward. The verdict comes at
+≥ 365 forward days with NW t ≥ 2 on forward days alone. That needs daily data after the archive end: monthly archive extensions are
+enough, so no always-on collector is required.
+
+**DEAD** otherwise. Then the R4b bleed was specific to ranks 41–100 / 2021–26 and does not generalise.
+
+### N4 — funding-settlement effect
+
+**Hypothesis.** Ahead of an extreme settlement the paying side reduces its position, pushing price toward the receiver; after the
+settlement the pressure lifts and price partly reverts. The timing is fixed by the exchange clock, so latency does not matter.
+
+**Events.**
+- Every funding settlement s (any interval) of a coin in the point-in-time **top 100 by volume**, R4 eligibility, from 2021-05-22 (≥ 100
+  eligible) to 2026-08-30.
+- **Signal:** the **previous** settlement's rate r_prev, which is known before s. This is the causal choice. The settled rate r_s is
+  finalised only at s and is used as information only.
+- **Extreme:** |r_prev| ≥ 0.10 % per settlement (≥ 10 bp paid by one side, the same order as the round-trip fee). The sign convention is
+  q = −sign(r_prev), i.e. the receiving side's direction.
+
+**Trades** (1 h klines; entry and exit at hourly closes; one position per coin per event).
+- **PRE:** enter q at the close of the bar ending at s − 1 h, exit at the close at s. The exit is treated as before the settlement, so
+  **no funding is credited**.
+- **POST:** enter −q (expected reversion) at the close at s, exit at s + 1 h. This trade does not hold through any settlement.
+- Gross = signed price return in bp. Net = gross − 9.0 bp (VIP0 + BNB taker round trip).
+
+**Controls.**
+- **Placebo:** the same coin, with the same q, over the bar 2 h earlier (PRE) or 2 h later (POST). That bar is not adjacent to a
+  settlement in either the 4 h or the 8 h regime. Report event minus placebo.
+- **Blind / drift:** the unsigned mean over the same bars.
+- **Splits:** r_prev > 0 vs < 0; 8 h vs 4 h vs 1 h interval; per year.
+- **Inference:** a bootstrap clustered by **settlement timestamp**, because events in the same hour are correlated.
+- **Lag row:** entry one hour later is the POST trade itself; for PRE the lag row is the placebo.
+- **Information:** the same cells signed by the settled r_s.
+
+**PASS (per arm; Holm across PRE and POST).** Net mean > 0 with clustered-bootstrap 95 % CI lower bound > 0. Event minus placebo > 0
+with CI lower bound > 0. Positive in ≥ 4 of 6 calendar years with events. Both funding-sign legs ≥ 0. n ≥ 300.
+
+**Kill.** Both arms fail → no tradeable settlement effect at 1 h resolution. **Caveat:** a 1 h bar dilutes an effect concentrated in
+the final minutes. A minute-scale follow-up is a new pre-registration, and it lands back in latency territory (R1), so the prior for it
+is low.
+
+### N2 — cross-venue funding spread, perp against perp (Binance vs Bybit)
+
+**Hypothesis.** The same coin's perp pays different funding on different venues, and the spread persists for days. Long the low-funding
+venue and short the high-funding one: the price risk cancels, and the trade collects the spread. This removes both binding constraints
+on carry: perp-only coins need no spot leg (R5), and there is no borrow limit (R9).
+
+**Data.**
+- **Binance:** the archive (on disk).
+- **Bybit:** the public v5 API (`/v5/market/funding/history`, `/v5/market/kline` at 1 h, `/v5/market/instruments-info`), via a new
+  resumable fetcher `harness_xsec/fetch_bybit.py` with tests.
+- **Window:** from the first day ≥ 20 symbols are on both venues, to the archive end.
+- **Survivorship caveat** (fixed now): the Bybit API lists only current instruments, so coins delisted from Bybit are missing. The
+  missing coin count is reported. Delisting is closed at the last common price.
+
+**Universe, daily 00:00 UTC.** The Binance point-in-time top 100 by volume ∩ coins with a Bybit USDT linear perp that has complete 1 h
+klines for the prior 30 days and ≥ 2 M USD mean daily Bybit volume.
+
+**Strategy `XFUND` (all parameters fixed).**
+- **Signal:** Δ7 = 7-day mean funding per 8 h on Bybit − on Binance. Each venue's settlements are summed over the window and normalised
+  to 8 h, so the 4 h and 1 h intervals are handled.
+- **Entry / exit:** enter when |Δ7| ≥ 0.03 % per 8 h; exit when |Δ7| < 0.01 %, or the coin leaves the set, or it delists. At most 10
+  positions, ranked by |Δ7|.
+- **Legs:** short the perp on the venue with higher funding, long on the other.
+- **Sizing:** each position uses 1/10 of capital as margin, 3× per leg, so each leg's notional is n = 0.15 × capital.
+- **Daily P&L:** n × (return of the long-venue perp − return of the short-venue perp + funding received − funding paid).
+- **Costs per side:** Binance 4.5 bp, Bybit 5.5 bp (VIP0 taker), so 20 bp per round trip of notional.
+- **Margin stress:** count days when either leg is > 25 % against its entry.
+- **Lag row:** everything again at 01:00.
+- **Benchmark:** the 4.5 %/yr risk-free rate. Idle capital earns 0.
+
+**PASS (all required):**
+- annualised net on capital ≥ 4.5 %;
+- net positive in every calendar year of the window (partial years included if ≥ 6 months);
+- worst month > −5 %;
+- NW t of daily net ≥ 2;
+- 1 h lag net > 0;
+- mean open positions ≥ 2. This is the capacity criterion that `CARRY+` failed.
+
+**Reported:**
+- the share of P&L from funding vs cross-venue price basis;
+- the median spread hold;
+- the 1 % worst days;
+- the thinner venue's median daily volume per held coin, as a capacity measure.
+
+**Kill.** Fail → cross-venue funding dispersion between two retail venues is too small or too short-lived to pay four taker legs.
+Bybit is chosen as the first venue because both venues are USDT-margined at VIP0. OKX and Hyperliquid (USDC, hourly funding) would be a
+new registration.
+
+### Status (2026-10-08)
+
+Pre-registered only. Next: N1 and N4 harness code + synthetic tests (`harness_xsec/`), archive extension, then the runs.
