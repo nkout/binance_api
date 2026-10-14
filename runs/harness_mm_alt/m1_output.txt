@@ -1,0 +1,12 @@
+rows 484 (band 440, comparator 44) over days 2023-07-19, 2023-10-18, 2024-01-17, 2024-03-13 | 0.1s
+band net_after_fee(5s) mean -4.296 bp (median -4.138), day-clustered CI95 [-4.913, -3.721]
+band median rel spread 2.219 bp | comparator net_after_fee(5s) -3.750 bp | positive days 0/4 | band OFI R2 0.471
+
+wrote /home/nkout/projects/binance_api/runs/harness_mm_alt/m1_results.json
+  [ ] net5_mean_pos_and_ci_pos: band net_after_fee(5s) mean -4.296 bp, day-clustered CI95 [-4.913, -3.721]
+  [ ] median_spread_gt_2x_fee: band median rel spread 2.219 bp vs 2x maker fee 4.0 bp
+  [ ] band_gt_comparator: band -4.296 bp vs comparator -3.750 bp
+  [x] same_sign_median_mean: median -4.138 bp, mean -4.296 bp
+  [ ] days_pos_ge_3: positive day-mean net_after_fee(5s) on 0 of 4 days (2023-07-19:-3.54, 2023-10-18:-4.23, 2024-01-17:-4.28, 2024-03-13:-5.14)
+
+VERDICT: FAIL — at least one pre-registered criterion failed

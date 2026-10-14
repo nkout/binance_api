@@ -1,0 +1,43 @@
+rows 484 | identities hold on 100% | coverage median 1.000, < 0.9 on 0 rows
+
+== band: 440 symbol-days, 194 symbols, days ['2023-07-19', '2023-10-18', '2024-01-17', '2024-03-13']
+  median quoted spread 2.22 bp (mean of medians 3.67); half-spread capture mean +1.91, effective half-spread +3.47; OFI R2 0.471
+  tau   adverse   net(before fee)   net after fee    share of symbol-days > 0 (after fee / before)
+    1s    -4.22     -2.31 (med  -2.08)     -4.21 (med  -3.98)   0% / 0%
+    5s    -4.31     -2.40 (med  -2.24)     -4.30 (med  -4.14)   0% / 0%
+   30s    -4.31     -2.39 (med  -2.21)     -4.29 (med  -4.11)   0% / 0%
+   60s    -4.25     -2.34 (med  -2.03)     -4.24 (med  -3.93)   0% / 1%
+  break-even maker fee at 5 s (net before fee): -2.40 bp per side (VIP0 maker 2.0 bp, rebate 0.1)
+  per day (net after fee 5 s, mean):  2023-07-19 -3.54 | 2023-10-18 -4.23 | 2024-01-17 -4.28 | 2024-03-13 -5.14
+  by quoted-spread tercile:
+    narrow qs   0.4-   1.7 bp | capture  +0.69 | adverse(5s)  -3.35 | net(5s)  -2.66 | after fee  -4.56 | > 0 after fee 0%
+    mid    qs   1.7-   3.1 bp | capture  +1.21 | adverse(5s)  -3.92 | net(5s)  -2.71 | after fee  -4.61 | > 0 after fee 0%
+    wide   qs   3.1-  38.0 bp | capture  +3.83 | adverse(5s)  -5.65 | net(5s)  -1.82 | after fee  -3.72 | > 0 after fee 0%
+  best 5 symbol-days (net after fee 5 s):
+      symbol        day    qs  capture   adv5  naf5  n_tr
+    STMXUSDT 2023-07-19 20.73    10.18  -9.92 -1.64 95899
+     XEMUSDT 2023-10-18 37.95    18.97 -19.24 -2.17 13394
+     TRXUSDT 2024-03-13  0.76     0.41  -0.88 -2.37 53757
+    HIGHUSDT 2023-07-19  8.62     4.45  -4.96 -2.40 25497
+    HOOKUSDT 2023-07-19  9.58     4.78  -5.30 -2.42 19321
+
+== comparator: 44 symbol-days, 24 symbols, days ['2023-07-19', '2023-10-18', '2024-01-17', '2024-03-13']
+  median quoted spread 0.46 bp (mean of medians 0.83); half-spread capture mean +0.48, effective half-spread +1.63; OFI R2 0.495
+  tau   adverse   net(before fee)   net after fee    share of symbol-days > 0 (after fee / before)
+    1s    -2.31     -1.83 (med  -1.70)     -3.73 (med  -3.60)   0% / 0%
+    5s    -2.33     -1.85 (med  -1.82)     -3.75 (med  -3.72)   0% / 0%
+   30s    -2.24     -1.76 (med  -1.65)     -3.66 (med  -3.55)   0% / 0%
+   60s    -2.14     -1.66 (med  -1.56)     -3.56 (med  -3.46)   0% / 0%
+  break-even maker fee at 5 s (net before fee): -1.85 bp per side (VIP0 maker 2.0 bp, rebate 0.1)
+  per day (net after fee 5 s, mean):  2023-07-19 -3.24 | 2023-10-18 -3.67 | 2024-01-17 -4.02 | 2024-03-13 -4.06
+  by quoted-spread tercile:
+    narrow qs   0.0-   0.3 bp | capture  +0.12 | adverse(5s)  -1.80 | net(5s)  -1.67 | after fee  -3.57 | > 0 after fee 0%
+    mid    qs   0.3-   0.7 bp | capture  +0.32 | adverse(5s)  -2.34 | net(5s)  -2.02 | after fee  -3.92 | > 0 after fee 0%
+    wide   qs   0.7-   7.8 bp | capture  +1.00 | adverse(5s)  -2.87 | net(5s)  -1.87 | after fee  -3.77 | > 0 after fee 0%
+  best 5 symbol-days (net after fee 5 s):
+      symbol        day   qs  capture  adv5  naf5   n_tr
+     BTCUSDT 2023-07-19 0.03     0.02 -0.75 -2.63 834070
+    DOGEUSDT 2023-10-18 1.70     0.88 -1.81 -2.83  51804
+     ETHUSDT 2023-07-19 0.05     0.03 -1.04 -2.90 552258
+     LTCUSDT 2023-07-19 1.08     0.55 -1.63 -2.97 158475
+     BTCUSDT 2024-01-17 0.02     0.02 -1.14 -3.01 898701
