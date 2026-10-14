@@ -2,7 +2,7 @@
 
 *Written 2026-10-01 as the programme's closing document; updated 2026-10-05 with Round 4 (§2.4: daily trend-following R6 and the
 hedged low-volatility factor R4b, both FAIL) and 2026-10-06 with two post-close probes (§2.5: the DVOL variance-premium check V1 and the
-borrow-rate check R9) and 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4, the alt-short basket N1 and the Binance–Bybit funding spread N2). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
+borrow-rate check R9), 2026-10-12 with Round 6 (§2.6: the funding-settlement event study N4, the alt-short basket N1 and the Binance–Bybit funding spread N2) and 2026-10-14 with Rounds 7–8 (§2.7: the new-token listing drift N5; §2.8: mid-cap market-making feasibility M1). `programme_report.html` is the 2026-10-01 version and includes none of these. Standalone: start here. Every number below
 comes from a write-up in `runs/`, listed in §8, and every result there is reproducible from a harness
 or an executed notebook in this repository.*
 
@@ -21,6 +21,9 @@ earned less than holding BTC and missed its pre-registered margin, and a BTC-hed
 Two post-close probes left small residuals rather than strategies: a volatility-premium rule that passed its gates narrowly on a 2021–22
 sample (and is flat since), and a negative-funding carry that survives today's borrow rates but is capped by borrow limits at a few thousand
 dollars per coin. **No tested strategy beat cash after costs at a scale and with evidence that held up outside the early sample.**
+Rounds 7–8 (2026-10-14) added two more failures:
+- shorting new listings wins in the median (+14.6 % per 14 days) and loses in the mean to a few pumps (N5);
+- passive market making on mid-caps loses to adverse selection before any fee (M1).
 
 ---
 
@@ -153,6 +156,36 @@ Both were cheap tests of premises the closing write-up had left open; both pre-r
   - N1: a regime, not a premium.
   - N2: a real premium that is too unstable from year to year.
 
+### 2.7 Round 7 (2026-10-14): new-token listing drift N5
+
+- **Test.** Short a new token's Binance perp against BTC for 14 days, entered at the first 00:00 ≥ 48 h after listing (`n5_listing.analysis.md`;
+  pre-registered in `next_signal_ideas.md` Round 7). 473 events 2020-07 → 2026-08, 18 bp, seasoned-alt control.
+- **DEAD, 2 of 10 criteria.**
+  - Event net mean **−3.77 %** (CI [−21.9, +7.7]), but **median +14.6 %**, 71 % of events win, trimmed mean +5.9 %.
+  - 15 coins more than doubled within the hold. COAIUSDT rose +3,653 % on ~$1.1 B a day, and that one event costs 7.4 points of the mean. 2025 is −13.3 %.
+  - Shorts *pay* funding on new listings (−1.35 % per event).
+  - Portfolio: +2.0 %/yr, NW t 0.38, worst month −18.9 %.
+- **Post-hoc, information only.**
+  - Rule: +50 % buy-stop on the coin, intrahour trigger, gap fill, 0.5 % slippage.
+  - Result: +4.3 % per event, CI [+0.5, +8.0]; but only **+1.9 % over the seasoned control** (CI [−2.0, +5.8]). Once the tail is cut, what remains is mostly the
+    2024–25 alts-vs-BTC regime (N1).
+- **Lesson.** This is the third independent case (R4, N1, N5) of a crypto short that wins in the median and loses in the mean. For any short book, report the mean, the
+  worst 1 % and a bounded-loss version, not the median or IC.
+
+### 2.8 Round 8 (2026-10-14): mid-cap alt market-making feasibility M1
+
+- **Test.** Can a passive quote at the touch on volume-rank 41–150 perps earn its half-spread net of adverse selection and the 2 bp maker fee?
+  (`m1_mmalt.analysis.md`; pre-registered in `next_signal_ideas.md` Round 8.) Free L1 `bookTicker` + signed `aggTrades`, 4 sampled days 2023-07 → 2024-03,
+  440 band symbol-days, BTC + top-10 as the comparator.
+- **FAIL, 4 of 5 criteria.**
+  - Net after fee at 5 s **−4.30 bp** per fill (CI [−4.91, −3.72]); **before the fee −2.40 bp**.
+  - 0 of 440 symbol-days positive after the fee; 0 of 4 days.
+- **The premise was wrong.** The median mid-cap quoted spread is **2.2 bp**, not 5–20 bp.
+  - Capture is +1.91 bp, against an adverse move of −4.31 bp within 5 s, almost all of it inside the first second.
+  - Wider-spread coins have proportionally larger adverse moves (widest tercile: +3.83 vs −5.65).
+  - Break-even needs a ~2.4 bp-per-side maker rebate.
+- **Consequence for §5.** A cheaper fee tier or a zero-fee venue does not rescue passive quoting on Binance perps. The loss is adverse selection, not the fee.
+
 ## 3. Why: the arithmetic that kept recurring
 
 1. **Fees vs move size.** The reachable tier at this volume is VIP0 + BNB: **9.0 bp taker round trip**,
@@ -190,7 +223,7 @@ its own edge ever exists. The volatility detector is the most robust asset the p
 ## 5. What would change the verdict
 
 Each of these changes the economics rather than the model:
-- **A much cheaper fee tier or venue.** A maker rebate or near-zero maker fee reopens the 30–90 s
+- **A much cheaper fee tier or venue.** (M1, §2.8: passive touch quoting loses −2.4 bp per fill *before* fees on mid-caps and −1.85 bp on majors, so a fee cut alone does not help a maker.) A maker rebate or near-zero maker fee reopens the 30–90 s
   ranking signal (oracle clears maker at a 30 s hold), but only with a solution to adverse selection.
   The untested `run.013` price-level panel (maker fill timing) is the one experiment aimed at that.
 - **Co-located, sub-second execution.** The big-move tail is worth +11–14 bp at zero delay. A venue
@@ -253,6 +286,7 @@ Ranked by how often they changed a conclusion (1–7 and 12; 8–11 were added a
 | big-move direction | `breakout_probe.analysis.md`, `v1_stage2_probe.analysis.md`, `continuation_conditioned.analysis.md`, `latency_decay_probe.analysis.md`, `wide_probe.analysis.md` |
 | fees | `fee_reprice.analysis.md` |
 | cross-section and carry | `r4_xsec.analysis.md`, `r5_carry.analysis.md`, `r9_borrow.analysis.md` |
+| Rounds 6–8 (settlement, alt-short, cross-venue funding, listing drift, market making) | `n4_settlement.analysis.md`, `n1_altshort.analysis.md`, `n2_xfund.analysis.md`, `n5_listing.analysis.md`, `m1_mmalt.analysis.md` |
 | trend and hedged low volatility (Round 4) | `r6_trend.analysis.md`, `r4b_lowvol.analysis.md` |
 | volatility premium and borrow (post-close) | `vrp_dvol.analysis.md`, `vol_monetisation_probe.plan.md` (spec, not implemented), `harness_vrp/forward_ledger.csv`, `r9_borrow.analysis.md` |
 | ideas, pre-registrations, status | `next_signal_ideas.md` (Rounds 1–5, R1–R6, R4b, R9, V1, W1) |

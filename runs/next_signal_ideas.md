@@ -940,3 +940,113 @@ squeezes. Nothing (threshold, H, entry delay, filters) is re-tuned. A variant wo
 
 Pre-registered only. Next: `harness_xsec/listing.py` + `test_listing.py` (synthetic worlds), then `run_n5.py`. Metadata inputs to save with the harness:
 the spot first-month map and the `exchangeInfo` snapshot (TradFi / index tags).
+
+### N5 implementation details (fixed 2026-10-14, before the run; the pre-registration is silent on these)
+
+- **Event set.** Reproduces the registered counts exactly in every year except one 2025 listing: **BOBUSDT**. The registration dropped it as a "re-listed base"
+  (its base matches the earlier `1000000BOBUSDT`). The rule is kept as registered: a symbol whose base without a 1000 / 1M prefix was listed earlier is `relisted`
+  and excluded. **Data finding:** the two prices differ by far more than a multiplier (0.0215 vs 0.0266 × 10⁻⁶), so BOBUSDT is a different token. The report gives
+  the primary mean with it put back. The other base collision, `CATUSDT`, is a TradFi equity and was excluded anyway. "Existed in January 2020" = first bar
+  before 2020-02-01 (11 symbols).
+- **In sample / forward.** In sample = exit (entry + H) ≤ 2026-08-31 00:00 for each H. Forward = exits after that, up to the last archive bar (2026-10-01 00:00).
+  With H = 28 the in-sample count is 472 by construction.
+- **Funding in the event P&L.** A buy-and-hold leg pays or receives each settlement in (entry, end] on its value at the settlement, `r_s × P(s) / P(entry)`.
+  A settlement exactly at entry is not paid; one exactly at exit is. The portfolio view marks on constant notional, so there funding is unweighted (as in R5 / N2).
+- **Death.** A leg ends at the coin's last traded bar close (`xfund.death_hour`: ≥ 24 trailing zero-volume bars), or after its last bar if the file stops early.
+- **Control.** At the entry day, take the point-in-time top 100 by 30-day quote volume among R4-eligible symbols. Drop BTC, TradFi and index perps, and keep coins
+  first listed ≥ 365 days earlier. Each coin is a buy-and-hold short with its own death closure and value-weighted funding. The event's long BTC leg and 18 bp are
+  added. The control is defined only when ≥ 10 coins qualify. Events without one (early 2020: no coin is yet 365 days old) are left out of criterion 3 and counted.
+- **Lag row.** Selection is unchanged. Entry and exit both move by + 1 h, and the event set is the same.
+- **Blind short** costs 9 bp (two sides).
+- **Statistics.**
+  - Bootstrap: 10,000 draws, seed 0, percentile CI, ISO week of the entry (`isocalendar`).
+  - Trimmed mean drops ⌊1 % × n⌋ events from each tail.
+  - Worst 1 % = mean of the worst max(1, ⌊1 % × n⌋) events.
+  - Per-year criterion: by entry year.
+- **Portfolio.**
+  - Window: from the first in-sample entry day to 2026-08-30. Mean daily net × 365 = annualised; NW t uses 10 lags (`xsec.nw_t`).
+  - The open cap is checked on the entry day against events still open that day.
+  - Entry cost is booked on the first held day and exit cost on the last.
+- **Volume terciles** are cut on the in-sample primary events' 24 h volume.
+- **Token type** is the first non-"Crypto" `underlyingSubType` tag, or "delisted" when the symbol is no longer in `exchangeInfo`.
+
+### Status (2026-10-14) — N5 executed: DEAD (2 of 10 criteria)
+
+`n5_listing.analysis.md`; harness `harness_xsec/listing.py`, `run_n5.py`, `test_listing.py` (27/27).
+- **Result.** 473 events. Event net mean **−3.77 %** per 14 days (CI [−21.9, +7.7]), but **median +14.6 %**, 71 % win, trimmed +5.9 %.
+- **Why it dies.** 15 coins more than doubled in the hold, and COAIUSDT (+3,653 %) alone costs 7.4 % of the mean. 2025 is −13.3 %. Portfolio +2.0 %/yr, NW t 0.38,
+  worst month −18.9 %.
+- **Post-hoc (information only).** A +50 % buy-stop, triggered intrahour with a gap fill, gives +4.3 % per event (CI [+0.5, +8.0]). But it is only +1.9 % over the seasoned
+  control (CI [−2.0, +5.8]), so it is mostly alts-vs-BTC exposure.
+- **Not re-registered.** A stopped variant would be scored only on listings after 2026-09-30, and would need about 12–18 months of forward data.
+
+---
+
+## Round 8 — M1: mid-cap alt market-making feasibility from free L1 quotes (pre-registered 2026-10-12, before any code)
+
+Context: BTC direction is closed at every horizon (`horizon_economics_and_next_ideas.md` §8): the 5 s–90 s signal is 9.4× too weak for the maker
+fee, and even a perfect next-bar oracle reaches only 1.15 bp. The programme's measured binding constraints are the fee/move ratio, a signal
+half-life of seconds, and a 50–150 ms execution latency from Greece. Rounds 6–7 failed as too fast to trade (R1, N4), too small in capacity
+(`CARRY+`, R9), or unstable across years (N1, N2, N5-pending). M1 breaks a different assumption: instead of *predicting direction* it
+*supplies liquidity* on instruments where the quoted spread is large relative to the fee. The programme's own close flagged it: "market making on
+mid-cap alts (spreads 5–20 bp > fee; needs the event-stream collector pointed at alts)" (`next_signal_ideas.md`, Round 4, "Not pursued"). The best
+asset the programme produced — the volatility detector (§4.7) — is used here as a *toxicity / quote-pull filter*, its documented "exact inverse" use.
+
+**Facts fixed before writing (schemas and counts only; no spread, mark-out or P&L looked at).**
+- Free historical L1 quotes exist only at
+  `data.binance.vision/data/futures/um/daily/bookTicker/<SYM>/<SYM>-bookTicker-<YYYY-MM-DD>.zip`, cols
+  `update_id,best_bid_price,best_bid_qty,best_ask_price,best_ask_qty,transaction_time,event_time`.
+  **Coverage 2023-05-16 → 2024-03-30, then discontinued** (verified against the S3 listing, 2026-10-12). 14–54 MB/symbol-day, ~1.0 M rows/day; a
+  daily file may cover < 24 h (ARBUSDT 2023-05-16 spanned ~10 h 29 m–20 h 24 m UTC), so the coverage fraction is recorded per symbol-day.
+- Signed trades: `.../aggTrades/<SYM>/<SYM>-aggTrades-<YYYY-MM-DD>.zip`, cols
+  `aggTradeId,price,qty,firstTradeId,lastTradeId,timestamp,isBuyerMaker`; full history from 2019-12-31. Aggressor sign `d = +1` iff `isBuyerMaker=false`.
+- `bookDepth` is **not** an L2 book (cols `timestamp,percentage,depth,notional`; ±% aggregate bands at ~30 s) → not used.
+- Fee anchors: Binance VIP0 maker 2.0 bp / taker 5.0 bp per side; Liquidity-Provider rebate −0.1 … −0.5 bp. `COST_BP = 4.5` (`xsec.py`) is the taker anchor.
+
+**Hypothesis.** On mid-cap perps the quoted spread is wide (5–20 bp) and the flow is less informed than on BTC, so a passive quoter's half-spread
+capture exceeds adverse selection plus fee — a maker edge BTC (spread ≈ 1 bp against a 2 bp maker fee) cannot have. If true, the identical
+measurement on BTC and the majors must be ≤ 0. That is the control.
+
+**Universe (point in time, each sampled day at 00:00 UTC).** Binance USDT-M perps with R4 eligibility (≥ 60 days listed, complete prior-30-day 1 h
+data, not stable / index), ranked by trailing 30-day quote volume. **Primary band = volume ranks 41–150** (mid-cap). **Comparator = BTCUSDT + the
+top-10 by volume** (majors). A coin with no `bookTicker` file on a sampled day is skipped and counted.
+
+**Sample (fixed).** Four calendar days — **2023-07-19, 2023-10-18, 2024-01-17, 2024-03-13** (Wednesdays inside the `bookTicker` window) — × every
+eligible symbol in the band on that day, plus the comparator set. Every band coin is present on all four days it is eligible.
+
+**Metrics (per symbol-day, then pooled equal-weight across symbols; all in bp).**
+1. Relative quoted spread `qs = (a − b)/mid · 1e4`; median, mean, deciles.
+2. Huang–Stoll decomposition on signed trades: effective half-spread `e = d·(p − m)`, realized `r(τ) = d·(p − m_τ)`, impact `= e − r`; the identity
+   `e = r + impact` is checked exactly. τ ∈ {1, 5, 30} s.
+3. Maker entry mark-out (Gatto decomposition): for a fill on the passive side at the touch, `s = −d`, `capture = s·(m0 − f)/m0`,
+   `net(τ) = s·(m_τ − f)/m0`, and `net_after_fee(τ) = net(τ) − (fee_maker − rebate)`. Report τ ∈ {1, 5, 30, 60} s.
+4. OFI (Cont–Kukanov–Stoikov, L1): `e_n` from `(P^B, q^B, P^A, q^A)`; regress the 1 s mid change on OFI; report R².
+
+**Controls.** Blind / drift benchmark (unsigned mean move on the same bars); day-clustered bootstrap (resample whole sampled days) for every CI;
+BTC/majors as the comparator; the identity and leak tests below.
+
+**PASS (primary cell, mid-cap band, pooled equal-weight; all required).**
+- `net_after_fee(τ = 5 s)` mean > 0 with a day-clustered bootstrap 95 % CI lower bound > 0;
+- median relative quoted spread > 2 × maker fee (i.e. > 4 bp);
+- `net_after_fee(5 s)` on the band > the same on the BTC/majors comparator;
+- same sign on median and mean, and positive on ≥ 3 of the 4 sampled days.
+
+**Kill.** Fail → mid-cap alt market-making is not viable at the reachable retail maker fee tier on free L1 data; the deferred idea is closed in this
+form. A live-collected forward test (post-2024-03) is a new registration.
+
+**Limitations (fixed now).** L1 only: no queue position, so fill probability is modelled as "a trade at the touch fills the resting touch quote"
+(a back-of-queue bound). The window is 2023-05 → 2024-03 only. `bookTicker` coverage may be partial-day. Survivorship is handled by the
+point-in-time R4 eligibility. Book-update vs trade causality is ambiguous from L1; the reference mid is read strictly before the fill timestamp.
+
+**Tests before the real run.** Formula units on synthetic quotes/trades; the Huang–Stoll identity `e = r + impact` exactly; the mark-out identity
+`capture + adverse = net`; OFI on a synthetic book; a leak test (nothing after t moves a decision at ≤ t); a planted maker-edge world that passes;
+≥ 10 null worlds (iid mid) that pass ≤ 1 time; end-to-end on a synthetic market.
+
+### Status (2026-10-14) — M1 executed: FAIL (4 of 5 criteria)
+
+`m1_mmalt.analysis.md`; harness `harness_mm_alt/` (tests 0 failures). 484 symbol-days: 440 band, 44 BTC / majors.
+- **Spread.** The band's median quoted spread is **2.2 bp** (the premise assumed 5–20 bp).
+- **Mark-out.** A passive touch fill captures +1.91 bp and loses −4.31 bp to the 5 s mid move: **−2.40 bp before fees**, −4.30 bp after (CI [−4.91, −3.72]).
+- **Breadth.** 0 of 440 symbol-days and 0 of 4 days are positive after fees, and every spread tercile is negative before fees. The band is worse than the majors (−3.75 bp).
+- **Implication.** Break-even needs a ~2.4 bp-per-side maker rebate. Closed in this form; no fee tier rescues naive quoting.
+- **Mid-run loader change.** The loader was made memory-lean after two OOM kills of the session. Its output is identical: 2 old rows re-derived on all 35 fields.
