@@ -1,0 +1,99 @@
+panels 892 symbols, 2464 days; classes {'new': 487, 'tradfi': 212, 'seasoned': 180, 'pre2020': 11, 'index': 1, 'relisted': 1} | 39s
+primary done | 42s
+info arms done | 49s
+
+classes: {'new': 487, 'tradfi': 212, 'seasoned': 180, 'pre2020': 11, 'index': 1, 'relisted': 1} | relisted (excluded): ['BOBUSDT']
+
+===== N5 PRIMARY: new tokens, entry >= L + 48 h, >= $5 M, short coin / long BTC, H = 14 d =====
+entries 2020-07-03 -> 2026-08-14
+  event net (%)         n  473 | mean  -3.77 % CI [-21.86,  +7.70] | median +14.64 | trimmed  +5.92 | win 71% | worst -3498.6 | worst-1% -1205.1 | best  +73.7
+  event - control (%)   n  443 | mean  -7.02 % CI [-26.42,  +5.12] | median +12.72 | trimmed  +3.32 | win 68% | worst -3521.6 | worst-1% -1214.4 | best  +93.5   [control missing on 30 events]
+  control alone (%)     n  443 | mean  +1.73 % | median  +1.88 | trimmed  +1.93 | win 59% | worst   -54.7 | worst-1%   -43.9 | best  +25.9
+  blind short (%)       n  473 | mean  -4.47 % | median +14.55 | trimmed  +5.21 | win 67% | worst -3499.1 | worst-1% -1207.6 | best  +77.5
+  1 h lag row: net mean -4.42 % (n 473)
+  decomposition (mean %): coin_ret +3.02 | coin_fund -1.35 | btc_ret +1.13 | btc_fund +0.34 | cost -0.18 | events closed at a delisting: 1
+  per entry year:
+    2020: n  29 | net mean +20.21 | median +10.11 | event - control   +nan | blind +11.64
+    2021: n  23 | net mean  -0.86 | median  +8.63 | event - control  +0.30 | blind  +0.86
+    2022: n  15 | net mean  +4.41 | median +14.20 | event - control  +7.72 | blind  +7.79
+    2023: n  42 | net mean  -0.87 | median  +8.19 | event - control  -0.43 | blind  -2.94
+    2024: n  96 | net mean  +4.39 | median +15.67 | event - control  +5.45 | blind  +1.12
+    2025: n 221 | net mean -13.31 | median +17.92 | event - control -17.53 | blind -12.69
+    2026: n  47 | net mean  +3.05 | median +11.43 | event - control  +2.93 | blind  +4.97
+  portfolio (2020-07-03 -> 2026-08-30, 2250 days; 2 % per leg, <= 25 open; mean open 2.9, max 19, skipped 0):
+    annualised +2.02 % | NW t 0.38 | Sharpe 0.16 | worst month -18.93 % | worst day -12.73 % | max DD -43.9 %
+    calendar years (%): 2020 +8.9 | 2021 -1.0 | 2022 +2.5 | 2023 -1.1 | 2024 +8.0 | 2025 -6.6 | 2026 +1.7
+    [ ] 1 event net mean > 0, clustered CI lower > 0
+    [x] 2 median > 0 and trimmed mean > 0
+    [ ] 3 event - seasoned control > 0, CI lower > 0
+    [ ] 4 mean > 0 in every year with >= 20 events except at most one
+    [ ] 5 1 h lag row net mean > 0
+    [ ] 6a portfolio annualised net >= 4.5 %
+    [ ] 6b portfolio NW t >= 2
+    [ ] 6c worst month > -5 %
+    [ ] 6d worst day > -5 %
+    [x] 7 n >= 300
+  VERDICT N5: DEAD
+
+  by entry-day volume tercile (information):
+    low (< $63 M)              n  158 | mean  +8.60 % | median +10.92 | trimmed  +8.86 | win 70% | worst   -90.8 | worst-1%   -90.8 | best  +68.9
+    mid ($63-237 M)            n  157 | mean  -5.16 % | median +13.71 | trimmed  -2.78 | win 68% | worst  -451.0 | worst-1%  -451.0 | best  +72.2
+    high (>= $237 M)           n  158 | mean -14.75 % | median +19.81 | trimmed  +7.02 | win 73% | worst -3498.6 | worst-1% -3498.6 | best  +73.7
+  by token type (information):
+    DeFi                       n  104 | mean  +9.12 % | median +20.49 | trimmed +12.78 | win 73% | worst  -423.3 | worst-1%  -423.3 | best  +68.5
+    Alpha                      n   77 | mean -49.59 % | median +12.33 | trimmed -49.59 | win 66% | worst -3498.6 | worst-1% -3498.6 | best  +62.7
+    AI                         n   60 | mean  +8.12 % | median +18.28 | trimmed  +8.12 | win 72% | worst  -301.6 | worst-1%  -301.6 | best  +73.7
+    Meme                       n   54 | mean  +3.92 % | median +19.11 | trimmed  +3.92 | win 65% | worst  -196.9 | worst-1%  -196.9 | best  +71.3
+    Infrastructure             n   48 | mean  -0.92 % | median +14.89 | trimmed  -0.92 | win 79% | worst  -451.0 | worst-1%  -451.0 | best  +50.5
+    Layer-1                    n   29 | mean  +2.67 % | median +10.23 | trimmed  +2.67 | win 72% | worst   -69.5 | worst-1%   -69.5 | best  +42.2
+    Gaming                     n   25 | mean  -3.38 % | median  +3.50 | trimmed  -3.38 | win 52% | worst  -138.7 | worst-1%  -138.7 | best  +62.9
+    none                       n   19 | mean +10.66 % | median +14.46 | trimmed +10.66 | win 79% | worst  -132.0 | worst-1%  -132.0 | best  +67.3
+    Layer-2                    n   16 | mean  +9.79 % | median +14.98 | trimmed  +9.79 | win 75% | worst   -28.1 | worst-1%   -28.1 | best  +63.9
+    delisted                   n   14 | mean +16.70 % | median +16.41 | trimmed +16.70 | win 86% | worst   -24.0 | worst-1%   -24.0 | best  +62.8
+    NFT                        n    8 | mean  -5.11 % | median +23.51 | trimmed  -5.11 | win 88% | worst  -190.8 | worst-1%  -190.8 | best  +40.4
+    Metaverse                  n    7 | mean  -5.39 % | median  +3.63 | trimmed  -5.39 | win 71% | worst  -128.7 | worst-1%  -128.7 | best  +48.6
+    PoW                        n    3 | mean +13.68 % | median +11.29 | trimmed +13.68 | win 100% | worst   +10.8 | worst-1%   +10.8 | best  +18.9
+    RWA                        n    3 | mean  -4.13 % | median  +4.78 | trimmed  -4.13 | win 67% | worst   -36.5 | worst-1%   -36.5 | best  +19.3
+    DEX                        n    2 | mean -37.50 % | median -37.50 | trimmed -37.50 | win 0% | worst   -72.4 | worst-1%   -72.4 | best   -2.6
+    Payment                    n    2 | mean  +1.40 % | median  +1.40 | trimmed  +1.40 | win 50% | worst    -6.9 | worst-1%    -6.9 | best   +9.7
+    Storage                    n    2 | mean -15.10 % | median -15.10 | trimmed -15.10 | win 0% | worst   -27.9 | worst-1%   -27.9 | best   -2.3
+  10 worst events:
+    2025-09-28 COAIUSDT         net -3498.6 % | coin +3652.7 % | coin funding to short +153.6 % | BTC leg   +0.6 %
+    2025-06-28 HUSDT            net  -451.0 % | coin  +283.9 % | coin funding to short -176.5 % | BTC leg   +9.6 %
+    2025-09-21 AIAUSDT          net  -447.6 % | coin  +451.7 % | coin funding to short   -1.4 % | BTC leg   +5.6 %
+    2025-09-12 AVNTUSDT         net  -423.3 % | coin  +414.5 % | coin funding to short   -2.8 % | BTC leg   -5.8 %
+    2025-02-16 IPUSDT           net  -301.6 % | coin  +252.0 % | coin funding to short  -37.4 % | BTC leg  -12.0 %
+    2025-09-05 QUSDT            net  -233.0 % | coin  +243.9 % | coin funding to short   +5.6 % | BTC leg   +5.5 %
+    2023-11-25 1000BONKUSDT     net  -196.9 % | coin  +213.6 % | coin funding to short   +0.1 % | BTC leg  +16.8 %
+    2022-03-18 GMTUSDT          net  -190.8 % | coin  +199.5 % | coin funding to short   -2.1 % | BTC leg  +10.9 %
+    2026-02-13 ESPUSDT          net  -143.2 % | coin   +93.4 % | coin funding to short  -51.3 % | BTC leg   +1.8 %
+    2024-05-19 NOTUSDT          net  -138.7 % | coin  +139.8 % | coin funding to short   +0.4 % | BTC leg   +0.9 %
+
+===== INFORMATION ARMS (not part of the verdict) =====
+  H = 7                  n  473 | mean  +1.02 % CI [ -3.65,  +5.23] | median  +8.99 | trimmed  +3.01 | win 67% | worst  -508.2 | worst-1%  -293.8 | best  +72.5
+                         event - control n  443 | mean  -0.47 % CI [ -5.47,  +3.80] | median  +7.94 | trimmed  +1.59 | win 65% | worst  -508.2 | worst-1%  -293.5 | best  +70.5
+                         years: 2020 +7.3 (n 29) | 2021 -2.5 (n 23) | 2022 +12.2 (n 15) | 2023 +4.3 (n 42) | 2024 +5.0 (n 96) | 2025 -3.1 (n 221) | 2026 +3.5 (n 47)
+  H = 28                 n  472 | mean -24.51 % CI [-93.81, +11.14] | median +20.29 | trimmed  +8.08 | win 71% | worst -14646.3 | worst-1% -3928.9 | best +120.8
+                         event - control n  442 | mean -30.90 % CI [-104.15,  +7.43] | median +14.40 | trimmed  +3.82 | win 68% | worst -14666.4 | worst-1% -3935.3 | best +114.6
+                         years: 2020 +24.0 (n 29) | 2021 +10.5 (n 23) | 2022 +5.2 (n 15) | 2023 -8.0 (n 42) | 2024 +7.8 (n 96) | 2025 -58.7 (n 221) | 2026 -0.3 (n 46)
+  seasoned listings      n  165 | mean  -1.95 % CI [-12.33,  +6.23] | median  +9.90 | trimmed  +1.38 | win 71% | worst  -604.8 | worst-1%  -604.8 | best  +57.9
+                         event - control n  142 | mean  +1.44 % CI [ -9.59,  +9.77] | median +10.79 | trimmed  +5.14 | win 75% | worst  -588.6 | worst-1%  -588.6 | best  +72.9
+                         years: 2020 -5.9 (n 22) | 2021 -7.9 (n 29) | 2022 +6.7 (n 11) | 2023 -0.9 (n 55) | 2024 +0.3 (n 33) | 2025 +0.0 (n 15)
+  liquidity >= $2 M      n  483 | mean  -4.00 % CI [-21.33,  +7.23] | median +14.26 | trimmed  +5.48 | win 70% | worst -3498.6 | worst-1% -1205.1 | best  +73.7
+                         event - control n  446 | mean  -7.00 % CI [-26.50,  +5.13] | median +12.69 | trimmed  +3.26 | win 68% | worst -3521.6 | worst-1% -1214.4 | best  +93.5
+                         years: 2020 +17.8 (n 35) | 2021 -8.6 (n 25) | 2022 +4.4 (n 15) | 2023 -0.9 (n 42) | 2024 +4.4 (n 96) | 2025 -13.2 (n 222) | 2026 +3.0 (n 48)
+  liquidity >= $10 M     n  459 | mean  -3.98 % CI [-22.69,  +7.88] | median +14.88 | trimmed  +6.01 | win 71% | worst -3498.6 | worst-1% -1205.1 | best  +73.7
+                         event - control n  434 | mean  -6.94 % CI [-26.98,  +5.46] | median +13.50 | trimmed  +3.62 | win 69% | worst -3521.6 | worst-1% -1214.4 | best  +93.5
+                         years: 2020 +18.7 (n 24) | 2021 +1.4 (n 22) | 2022 +4.0 (n 13) | 2023 -0.9 (n 41) | 2024 +4.4 (n 96) | 2025 -13.5 (n 220) | 2026 +5.1 (n 43)
+  entry >= L + 24 h      n  479 | mean  -2.52 % CI [-20.19,  +8.87] | median +13.86 | trimmed  +6.84 | win 71% | worst -3575.7 | worst-1% -1187.9 | best  +97.9
+                         event - control n  446 | mean  -5.95 % CI [-25.10,  +6.18] | median +13.93 | trimmed  +4.18 | win 67% | worst -3601.6 | worst-1% -1195.7 | best  +81.9
+                         years: 2020 +25.6 (n 31) | 2021 -0.4 (n 25) | 2022 +4.2 (n 15) | 2023 -0.5 (n 42) | 2024 +5.1 (n 96) | 2025 -11.2 (n 222) | 2026 -0.8 (n 48)
+
+  sensitivity: with the 1 re-listing exclusion(s) put back [{'sym': 'BOBUSDT', 'net_pct': 4.219157923751692}]: primary mean -3.75 %
+
+===== FORWARD BLOCK (exit after the in-sample end; unseen; descriptive) =====
+  n    2 | mean +12.08 % | median +12.08 | trimmed +12.08 | win 100% | worst    +3.8 | worst-1%    +3.8 | best  +20.4
+    2026-09-04 MARSCOINUSDT        +3.8 %
+    2026-09-09 PONSUSDT           +20.4 %
+
+(49s)
