@@ -1,0 +1,208 @@
+{
+ "window": [
+  "2020-10-14",
+  "2026-08-30"
+ ],
+ "days": 2147,
+ "full_years": [
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "assets_fetched": 197,
+ "assets_unsupported": 0,
+ "unsupported": [],
+ "checks": {
+  "vip_level_all_zero": true,
+  "bad_vip": [],
+  "xcheck_assets": 153,
+  "xcheck_share_within_10pct": 0.7843137254901961,
+  "xcheck_pass": false,
+  "xcheck_worst": [
+   [
+    "NOM",
+    0.5196538968688935
+   ],
+   [
+    "DEXE",
+    0.4382349660562548
+   ],
+   [
+    "WCT",
+    0.39292761617985095
+   ],
+   [
+    "CELO",
+    0.37170952891953335
+   ],
+   [
+    "DYDX",
+    0.3469428370227723
+   ]
+  ]
+ },
+ "rows": {
+  "a_primary": {
+   "ann_pct": 18.592331222204564,
+   "years_pct": {
+    "2020": 0.5586591889422577,
+    "2021": -0.03545135827819081,
+    "2022": 21.341059943123035,
+    "2023": 6.530804924505003,
+    "2024": -2.418905361822276,
+    "2025": 38.391179751837534,
+    "2026": 44.996310813263044
+   },
+   "worst_month_pct": -1.244839672093492,
+   "maxdd_pct": -4.961569329334193,
+   "nw_t": 2.9567677286168297,
+   "sharpe": 1.7041745074918575,
+   "mean_positions": 3.0209594783418723,
+   "borrow_cost_ann_pct": 18.07027839927657,
+   "net_before_borrow_ann_pct": 36.66260962148113,
+   "breakeven_multiple": 1.779862429942902,
+   "share_r5_position_days_not_borrowable": 0.016676773802304427,
+   "lag_ann_pct": 17.260588614623952
+  },
+  "b_hist_rates_today_list": {
+   "ann_pct": 12.00864080251646,
+   "years_pct": {
+    "2020": 0.2963295621970898,
+    "2021": -0.928875590143943,
+    "2022": 19.9348156813743,
+    "2023": 0.6481685105414646,
+    "2024": -2.9334303440686966,
+    "2025": 8.181944798860783,
+    "2026": 45.43817560864405
+   },
+   "worst_month_pct": -1.6147853885759893,
+   "maxdd_pct": -4.733245946342709,
+   "nw_t": 3.6887220396460982,
+   "sharpe": 2.4224824997854615,
+   "mean_positions": 2.6609222170470423,
+   "borrow_cost_ann_pct": 14.736201997218318,
+   "net_before_borrow_ann_pct": 26.744842799734776,
+   "breakeven_multiple": 1.5095370438009623,
+   "share_r5_position_days_not_borrowable": 0.14721043056397817,
+   "lag_ann_pct": 10.910528471791128
+  },
+  "c_r9_s2_today_rates": {
+   "ann_pct": 18.881501897487457,
+   "years_pct": {
+    "2020": 1.0559031621970905,
+    "2021": 1.3739858348560472,
+    "2022": 23.81180679387426,
+    "2023": 14.304504245741823,
+    "2024": -0.5117756913734939,
+    "2025": 22.78336707849961,
+    "2026": 48.246823847178824
+   },
+   "worst_month_pct": -0.833388376774952,
+   "maxdd_pct": -1.4836248564885357,
+   "nw_t": 5.721014417962966,
+   "sharpe": 3.7891984919020594,
+   "mean_positions": 2.6609222170470423,
+   "borrow_cost_ann_pct": 7.863340902247323,
+   "net_before_borrow_ann_pct": 26.744842799734776,
+   "breakeven_multiple": 2.8289302315987923,
+   "share_r5_position_days_not_borrowable": 0.14721043056397817
+  },
+  "d_r5_gross": {
+   "ann_pct": 37.32571163382359,
+   "years_pct": {
+    "2020": 1.8674091889422584,
+    "2021": 5.725423641721801,
+    "2022": 36.263830705622944,
+    "2023": 33.64090955952647,
+    "2024": 3.5679720580275647,
+    "2025": 74.8403858272357,
+    "2026": 63.65106320472938
+   },
+   "mean_positions": 3.072193758733116
+  },
+  "f_registered_rate_exists": {
+   "ann_pct": 18.816164443035596,
+   "years_pct": {
+    "2020": 0.5586591889422577,
+    "2021": -0.03545135827819081,
+    "2022": 21.341059943123035,
+    "2023": 6.163389984872911,
+    "2024": -3.5233043536282365,
+    "2025": 39.15199061632731,
+    "2026": 47.02394381205854
+   },
+   "worst_month_pct": -1.8246800745954923,
+   "maxdd_pct": -5.86351833567143,
+   "nw_t": 2.983146388978675,
+   "sharpe": 1.7232514998751787,
+   "mean_positions": 3.072193758733116,
+   "borrow_cost_ann_pct": 18.50954719078799,
+   "net_before_borrow_ann_pct": 37.32571163382359,
+   "breakeven_multiple": 1.773447577915931,
+   "share_r5_position_days_not_borrowable": 0.0,
+   "lag_ann_pct": 17.52106499553082
+  }
+ },
+ "diagnostics": {
+  "top3": [
+   [
+    "ALPACAUSDT",
+    32.976824680491504
+   ],
+   [
+    "DEXEUSDT",
+    8.151337572160147
+   ],
+   [
+    "FTTUSDT",
+    6.721285920635702
+   ]
+  ],
+  "top3_share": 0.4375260401069691,
+  "coins_held": 191,
+  "paid_rate_ann_pct_deep_neg_funding": 150.55065089464316,
+  "paid_rate_ann_pct_other": 50.00769372523253,
+  "held_days_deep": 1919,
+  "held_days_other": 4567,
+  "mean_paid_rate_ann_pct": 79.75513973326504,
+  "frozen_position_days_excluded": 110
+ },
+ "tiers": {
+  "a_primary": {
+   "tier": "DEAD",
+   "criteria": {
+    "net": true,
+    "worst_month": true,
+    "nw_t": true,
+    "lag": true,
+    "breakeven": true,
+    "every_year": false
+   }
+  },
+  "b_hist_rates_today_list": {
+   "tier": "DEAD",
+   "criteria": {
+    "net": true,
+    "worst_month": true,
+    "nw_t": true,
+    "lag": true,
+    "breakeven": true,
+    "every_year": false
+   }
+  },
+  "f_registered_rate_exists": {
+   "tier": "DEAD",
+   "criteria": {
+    "net": true,
+    "worst_month": true,
+    "nw_t": true,
+    "lag": true,
+    "breakeven": true,
+    "every_year": false
+   }
+  }
+ },
+ "verdict": "STOPPED (real-data check failed)"
+}

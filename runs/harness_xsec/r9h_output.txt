@@ -1,0 +1,17 @@
+R9-H window 2020-10-14 -> 2026-08-30 (2147 d), full years [2021, 2022, 2023, 2024, 2025] | assets 197 (0 never on margin) | 38s
+checks: vipLevel all 0 True | snapshot 2026-10-05 within 10 %: 78.4 % of 153 assets -> FAIL (worst NOM 52 %, DEXE 44 %, WCT 39 %)
+  (a) primary, amended B              +18.59 %/yr  pos 3.02  NW t 2.96  worst month -1.24 %  maxDD -4.96 %  borrow 18.07 %/yr  break-even 1.78x  lag +17.26  R5 days not borrowable 1.7 %
+      years: 2020 +0.56  2021 -0.04  2022 +21.34  2023 +6.53  2024 -2.42  2025 +38.39  2026 +45.00
+  (b) hist. rates, today's list       +12.01 %/yr  pos 2.66  NW t 3.69  worst month -1.61 %  maxDD -4.73 %  borrow 14.74 %/yr  break-even 1.51x  lag +10.91  R5 days not borrowable 14.7 %
+      years: 2020 +0.30  2021 -0.93  2022 +19.93  2023 +0.65  2024 -2.93  2025 +8.18  2026 +45.44
+  (c) R9 S2, today's rates            +18.88 %/yr  pos 2.66  NW t 5.72  worst month -0.83 %  maxDD -1.48 %  borrow 7.86 %/yr  break-even 2.83x  R5 days not borrowable 14.7 %
+      years: 2020 +1.06  2021 +1.37  2022 +23.81  2023 +14.30  2024 -0.51  2025 +22.78  2026 +48.25
+  (d) R5 gross of borrow              +37.33 %/yr  pos 3.07
+      years: 2020 +1.87  2021 +5.73  2022 +36.26  2023 +33.64  2024 +3.57  2025 +74.84  2026 +63.65
+  (f) registered B: rate exists       +18.82 %/yr  pos 3.07  NW t 2.98  worst month -1.82 %  maxDD -5.86 %  borrow 18.51 %/yr  break-even 1.77x  lag +17.52  R5 days not borrowable 0.0 %
+      years: 2020 +0.56  2021 -0.04  2022 +21.34  2023 +6.16  2024 -3.52  2025 +39.15  2026 +47.02
+diagnostics: top-3 [('ALPACAUSDT', 32.976824680491504), ('DEXEUSDT', 8.151337572160147), ('FTTUSDT', 6.721285920635702)] share 43.8 % | coins held 191 | mean paid rate 79.8 %/yr (FUND7 <= -0.10 %: 150.6 on 1919 d; other 50.0 on 4567 d) | R5 position-days dropped as frozen 110
+  tier (a) primary, amended B             DEAD           {'net': True, 'worst_month': True, 'nw_t': True, 'lag': True, 'breakeven': True, 'every_year': False}
+  tier (b) hist. rates, today's list      DEAD           {'net': True, 'worst_month': True, 'nw_t': True, 'lag': True, 'breakeven': True, 'every_year': False}
+  tier (f) registered B: rate exists      DEAD           {'net': True, 'worst_month': True, 'nw_t': True, 'lag': True, 'breakeven': True, 'every_year': False}
+VERDICT (primary): STOPPED (real-data check failed)

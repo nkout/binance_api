@@ -1183,6 +1183,19 @@ Round 9 aims at the two places where the programme found money:
 - **Row (c):** uses the saved R9 snapshot (`harness_xsec/r9_borrow_snapshot.json`, 2026-10-06), so that it reproduces R9 S2. Row (b) uses the same list.
 - **Assets:** the base assets of coins with elig ∧ FUND7 ≤ −0.03 % on at least one day of the window, computed from the R5 panels.
 
+#### Status (2026-10-17) — R9-H executed: STOPPED by the letter, DEAD on every tier
+
+`r9h_borrow_history.analysis.md`; harness `harness_xsec/r9h.py`, `run_r9h.py`, `test_r9h.py` (19/19), `r9h_diagnostics.py`.
+- **Fetch.** 197 assets × 75 windows, 0 errors, all on cross margin at some point. Rows (c) and (d) reproduce R9 S2 and R5 exactly.
+- **STOPPED.** The snapshot cross-check gave 78.4 % within 10 % (needs 90 %). Diagnostic: the rate in effect at the snapshot's fetch time matches **153 of 153** assets
+  exactly. The check compared a point-in-time snapshot with a day mean; it is mis-specified, and the data are correct.
+- **DEAD on every tier** (a, b, f): positive every full year fails, with 2021 −0.04 % and 2024 −2.42 %. Primary +18.59 %/yr, NW t 2.96, worst month −1.24 %, break-even
+  1.78× the historical rates.
+- **Borrow.** Historical borrow costs 18.1 %/yr of capital (7.9 % at today's rates); the paid rate is 151 %/yr when FUND7 ≤ −0.10 % vs 50 % otherwise.
+- **Concentration.** ALPACA's delisting week (April 2025) is +33 pp of capital, mostly perp-vs-spot basis at ~920 %/yr borrow; FTT's collapse week adds +6.7 pp. Without
+  ALPACA: +13.0 %/yr; without the top three: +10.5 %/yr.
+- **`CARRY−` closed.** Not re-registered.
+
 ### Q1 — squeeze risk from positioning (`metrics` archive), aimed at the short-book tail
 
 **Facts fixed before writing (listings and schemas only; no prices, returns or pumps looked at).**
@@ -1299,6 +1312,103 @@ account ratio, or `sum_open_interest` does not match open interest, stop and re-
 ### Status (2026-10-17)
 
 - Pre-registered only. The §0 WebSocket fix is applied and was checked live (above).
-- **R9-H** waits for the user's read-only key.
+- **R9-H** executed 2026-10-17 (status above): STOPPED by the letter, DEAD on every tier; `CARRY−` closed.
 - **Q1** next: a `metrics` fetcher with the REST cross-check, `harness_xsec/squeeze.py` + `test_squeeze.py` (synthetic worlds), then `run_q1.py`.
 - Q1's daily files are about 1–2 × 10⁵ requests (every coin-day in the top-100 from 2021-12, plus the 30-day lookbacks). Fetch them resumably, with a few threads.
+
+---
+
+## Round 10 — N4-S: the funding-settlement move at sub-second resolution (pre-registered 2026-10-17, before any trade prices around a settlement were read)
+
+Context:
+- **N4 POST passed** on 1 h bars: +25.4 bp net per event, n 20,847.
+- **N4-X failed** at 1-minute resolution. About 26 of the hour's 43 bp happen in the first minute, and an entry at s + 2 min nets +0.8 bp at 19 bp all-in. N4 was closed as
+  "a latency race".
+- **Why a closer look is warranted.** This trade's direction (the sign of the previous rate) and its time (the scheduled settlement) are both known in advance, so no
+  information has to be reacted to. The only delay is the order's arrival after a known instant: from Greece (RTT 50–150 ms, NTP-synced clock), an order sent at s arrives
+  about 0.1–0.2 s later.
+- **What is unmeasured.** N4-X could not see inside the first minute. In N4's diagnostics, entering at the first trade after s earned +34.0 bp gross over the hour.
+
+### Facts fixed before writing (format and counts only)
+
+- **Data:** `data.binance.vision/data/futures/um/daily/aggTrades/<SYM>/<SYM>-aggTrades-<YYYY-MM-DD>.zip`.
+  - Header `agg_trade_id,price,quantity,first_trade_id,last_trade_id,transact_time,is_buyer_maker`, with `transact_time` in ms.
+  - `is_buyer_maker` = true means the seller was the taker, i.e. a market sell filled at the bid.
+- **Sample:** exactly the N4-X sample, `harness_xsec/n4x_sample.csv`.
+  - 2,000 events drawn with seed 0 from 2025-01-01 → 2026-08-30: 739 in 2025, 1,261 in 2026.
+  - Funding intervals: 1 h 906, 2 h 12, 4 h 975, 8 h 107. 1,331 coin-days.
+  - Its 1-minute path is known; nothing finer has been looked at.
+- **Size:** about 19 GB zipped (25 sampled files: median 2.8 MB, mean 14 MB, max 92 MB). Only 12 GB of disk is free, so files are streamed and only the event windows are
+  kept.
+- **Reference price:** P(s−) = `p_s` from N4-X, the close of the minute before s, i.e. the last trade before s.
+
+### Hypothesis
+
+A material part of the first-minute move happens after the first half-second, so an order timed to the settlement captures it.
+
+### Construction (the N4 POST rule frozen; only the entry instant and the fill model change)
+
+- **Direction:** d = sign(r_prev), the paying side, known before s.
+- **Entry at s + Δ:** the price of the first trade *on the taker's side* at or after s + Δ.
+  - d = +1 buys at the first trade with `is_buyer_maker` = false; d = −1 sells at the first trade with `is_buyer_maker` = true.
+  - **Primary Δ = 0.5 s** (an order sent at s from Greece, with margin). Information: Δ = 0.1, 0.25, 1, 2, 5, 10, 30, 60, 120 s.
+- **Exit:** the first opposite-side taker trade at or after **s + 3,595 s**, five seconds before the hour, so a 1 h-interval coin does not hold through the next
+  settlement. N4 used P(s + 1 h), the last trade before s + 1 h, which is practically the same instant.
+- **Missing:** no fill within 60 s of a target time makes the event missing; it is counted.
+- **P&L:** gross = d × (exit / entry − 1) × 10⁴ bp; net = gross − **9 bp** (VIP0 + BNB taker fees, both sides). The spread is inside the fills, so no further allowance
+  is made. Information: net − 10 bp (an extra 5 bp per side for size and slippage).
+- **Path (information):** the signed move d × (last trade at s + Δ / P(s−) − 1) for Δ ∈ {0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 120} s, and the number of trades in each
+  interval. This shows where inside the minute the move happens.
+- **Pre-positioning (information):** enter on the taker side at the last trade before s − 1 s, so the position holds through s and pays the settled rate
+  (funding P&L = −d × r_s × 10⁴). Only events whose day file covers s − 1 s, i.e. not settlements at 00:00 UTC.
+
+### Checks
+
+- **Equivalence on the real data (stop if it fails).** Rebuild N4-X's registered trade from the aggTrades: entry at the first trade of any side at or after s + 120 s,
+  exit at the last trade before s + 3,600 s. It must match N4-X's `g2` within 0.5 bp for ≥ 99 % of events.
+- **Tests before the real run:**
+  - fill-side logic on synthetic trades;
+  - the "first at or after" rule, including equal timestamps;
+  - no fill within 60 s → missing;
+  - window extraction gives the same fills as the full file;
+  - the gross sign on a planted path;
+  - leak: trades after a target never change an earlier fill;
+  - readers for both the header and no-header layouts.
+
+### Statistics
+
+- Bootstrap clustered by settlement timestamp (`settle.cluster_boot`, seed 0).
+- Mean, median, trimmed mean, worst event and worst 1 %.
+- Breakdowns by year, by |r_prev| tercile and by funding interval.
+
+### Power, stated before the run
+
+N4-X's s + 2 min gross had a CI half-width of about 20 bp at n 2,000, i.e. a clustered SE of about 10 bp. A CI lower bound above 0 therefore needs a net mean of roughly
+20 bp, i.e. about 29 bp gross at Δ = 0.5 s. If almost all of the first-minute move comes after 0.5 s, the gross should be near the 34 bp seen for the first trade after
+s, so the test is at the edge of its power.
+
+### PASS (all required, Δ = 0.5 s)
+
+1. Net mean > 0, with the clustered 95 % CI lower bound > 0.
+2. Net median > 0.
+3. Net mean > 0 in 2025 and in 2026, separately.
+4. Net mean > 0 at Δ = 1 s.
+5. At least 1,800 events with both fills.
+
+### Verdicts
+
+- **PASS →** N4-L: a forward ledger capturing live aggTrades around settlements, then a small live pilot. Each is a new registration.
+- **FAIL →** the settlement move is gone within half a second, and N4 is closed for good at retail latency. The Δ = 0.1 / 0.25 s rows show whether co-location
+  would matter.
+
+**Prior.** Low to moderate. Fast participants know the same schedule.
+
+### Status (2026-10-17)
+
+- **Code:** `harness_xsec/n4s.py` (library: reader, fills, fetch, scoring), `test_n4s.py` (13/13), `run_n4s.py` (local runner).
+- **Run moved to Colab.** A local fetch was stopped at 170 of 1,331 coin-days, too slow on this machine, and nothing was scored. The run moves to
+  `runs/n4s_probe.ipynb` (CPU runtime, extracts cached on Google Drive), built by `harness_n4s/build_notebook.py`.
+- **Notebook checks:** `harness_n4s/test_notebook.py` passes 11/11.
+  - The embedded library, helpers and sample equal their source files.
+  - A local SMOKE run on 3 coin-days rebuilt N4-X's s + 2 min trade with a maximum deviation of 0.0 bp and matched the local runner per event.
+- **Results:** no N4-S result has been looked at.
