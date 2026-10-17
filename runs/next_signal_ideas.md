@@ -1050,3 +1050,255 @@ point-in-time R4 eligibility. Book-update vs trade causality is ambiguous from L
 - **Breadth.** 0 of 440 symbol-days and 0 of 4 days are positive after fees, and every spread tercile is negative before fees. The band is worse than the majors (−3.75 bp).
 - **Implication.** Break-even needs a ~2.4 bp-per-side maker rebate. Closed in this form; no fee tier rescues naive quoting.
 - **Mid-run loader change.** The loader was made memory-lean after two OOM kills of the session. Its output is identical: 2 old rows re-derived on all 35 fields.
+
+---
+
+## Round 9 — R9-H: `CARRY−` on historical borrow rates; Q1: squeeze risk from positioning (pre-registered 2026-10-17, before any code)
+
+Context: `new_features.md` (2026-10-17) lists new Binance data and proposes three more BTC-direction tests: §6 positioning at 4 h, §7 a trend gate on the 4 h rule, §8 a
+model-class check.
+- **§7 not registered.** Its read-only diagnostic (§7.2) was run first: a scratch script, not committed, on the 1,625 trades of `v1_4h_feasibility.analysis.md` §9,
+  which it reproduces exactly.
+  - Counter-trend trades do carry the losses: with-trend +3.21 bp gross (n 880, CI [−5.2, +11.6]), counter-trend −6.82 (n 745).
+  - But the gated half misses the 4 bp maker fee and four of the five proposed §7.4 criteria, in sample: trend drift alone is +1.48, worst 1 % −407 vs −444, positive
+    in 4 of 6 years.
+- **§8.1 not registered on its own.** At 4 h the GBM stopped at iteration 0 and the linear signed-z sum beat it; at 90 s the MLP matched xgboost. Its success branch
+  (+0.02 IC) would leave pooled IC near 0.06, below the ≈ 0.085 the fee needs.
+- **§0 applied.** The liquidation / mark-price WebSocket URLs now use the routed `/market/ws/` path. Checked live on 2026-10-17: the legacy path delivers nothing; the
+  routed path delivers `markPrice` and 54 of the 56 `forceOrder` events that `!forceOrder@arr` showed on the same 40 perps in 3 minutes.
+
+Round 9 aims at the two places where the programme found money:
+- `CARRY−`, the only positive net at retail size, blocked by unknown historical borrow rates (R9);
+- the right tail that sank the single-coin short books (R4, N5).
+
+### R9-H — `CARRY−` on the borrow rates actually charged
+
+**Facts fixed before writing.**
+- Endpoint `GET /sapi/v1/margin/interestRateHistory`: `USER_DATA`, HMAC-SHA256 signed, weight 1. Parameters `asset`, `vipLevel=0`, `startTime`, `endTime` (≤ 30 days
+  apart). How far back it goes is not known; finding that is part of the run.
+- **Needs a read-only API key** (reading only; trading, margin and withdrawals disabled), passed as the `BINANCE_KEY` / `BINANCE_SECRET` environment variables and never
+  written to the repo, a log or an output file. The responses are market rates, not account data; they are cached raw, with the fetch time, under `data/borrow_api/`
+  (not in git).
+- R9 S2 (today's rates, today's list): +18.88 %/yr, 2024 −0.51 %, break-even at 2.83× today's rates. 193 coins appear in R5 `CARRY−` episodes; 43 are not on today's
+  list (14.7 % of position-days).
+- One public snapshot exists, `data/borrow_history/borrow_2026-10-05.json.gz`; it is the cross-check below.
+
+**Question.** Does `CARRY−` earn more than the risk-free rate when it pays the borrow rate charged at the time, on coins that could be borrowed at the time?
+
+**Construction (R5 unchanged except for borrow).**
+- **Assets fetched:** the base asset of every coin that meets the `CARRY−` entry condition (FUND7 ≤ −0.03 % per 8 h inside the R5 universe) on at least one day
+  2020-10-14 → 2026-08-30. The list comes from the R5 code before any request. Base-asset mapping as R9 (strip `1000` / `10000` / `1000000` / `1M`).
+- **Requests:** contiguous 30-day windows per asset from 2020-10-01 to 2026-09-30, at most 5 requests a second.
+- **Daily rate r[d, j]:** the mean `dailyInterestRate` of the records stamped in UTC day d. If day d has no record, use the last record of the previous 3 days;
+  otherwise there is no rate.
+- **Point-in-time borrowability:** B[d, j] = r[d, j] exists. This replaces R9's "on today's list", which is a survivor list.
+- **Book:** R5 `CARRY−` (signal, entry and exit, 10 slots, 3× perp, 24 bp round trip, funding as P&L) on eligibility ∧ B. Each open position pays r[d, j] on its
+  spot-short notional (`carry.N_SLOT` = 0.075 of capital) for every day it is open. A position whose coin stops being borrowable closes that day (a recall).
+- **Window:** from the first UTC day on which BTC, ETH and BNB all have a rate (the endpoint's depth) to 2026-08-30. Earlier days are not used.
+
+**Rows (same window).**
+- (a) primary;
+- (b) historical rates on today's list, which separates the rate effect from the list effect;
+- (c) R9 S2 recomputed on the window;
+- (d) R5 gross;
+- (e) primary with execution at 01:00 (the R5 latency control).
+
+**Reported.**
+- Net %/yr on capital, per calendar year, NW t (10 lags), worst month, max drawdown, mean positions.
+- Borrow cost %/yr, the mean paid rate on held positions, and the uniform multiple of the historical rates at which net = 4.5 %.
+- Share of R5 position-days not borrowable at the time; share of the top three coins.
+- Paid rate on held days with FUND7 ≤ −0.10 % vs other held days (the concern that rates spike in squeezes).
+
+**Tests before the real run (network mocked).**
+- Signing against Binance's published example: query `symbol=LTCBTC&side=BUY&type=LIMIT&timeInForce=GTC&quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559`
+  with the documented secret gives `c8db56825ae71d6d79447849e617115f4a920fa2acdcab2b053c4b2838bd6b71` (checked 2026-10-17).
+- The windows cover every day exactly once.
+- The day-rate rule: mean within the day, 3-day carry, otherwise none.
+- Equivalence: with r = today's constant rates and B = today's list, the code reproduces R9 S2 to the basis point.
+- Leak test: scrambling rates after day T leaves everything at ≤ T unchanged.
+- Exact P&L identity.
+
+**Checks on the real data before scoring (stop and report if either fails).**
+- Every record has `vipLevel` 0.
+- For assets in both, the history's 2026-10-05 rate is within 10 % (relative) of that day's public snapshot for ≥ 90 % of assets.
+
+**Decision (tiers fixed now).**
+- **PASS (all required):**
+  - net ≥ 4.5 %/yr;
+  - positive in every full calendar year of the window;
+  - worst month > −5 %;
+  - NW t ≥ 2;
+  - row (e) positive;
+  - break-even multiple ≥ 1.5.
+
+  Next step: a new registration for a forward ledger of live candidates plus a small live pilot sized inside the VIP0 borrow limits.
+- **ALIVE-forward:** every PASS criterion except "every year", with exactly one negative year that is > −2 %. Next step: a forward paper ledger only, no money. This
+  tier exists because 2024 was −0.51 % at today's rates (R9 S2). It is written down now so that it cannot be added after the numbers.
+- **DEAD:** anything else. `CARRY−` is closed.
+- **UNDERPOWERED:** fewer than 3 full calendar years of history. Descriptive only.
+
+**Not tested here.**
+- Capacity: the history has no limits. Today's VIP0 limits ($1.5k–5.6k per coin) cap the deployable capital at roughly $10–25k.
+- Whether borrow was actually available when a rate was published (pool exhausted, recalls).
+- Margin operations: collateral split between the margin and futures wallets, top-ups when a coin pumps.
+- Account eligibility: before any pilot, the user confirms in the Binance UI that Cross Margin borrowing is available on the account.
+
+**Prior.** Positive on the rate question, since R9 breaks even at 2.8× today's rates. The risks are the every-year bar and rate spikes during squeezes.
+
+#### R9-H implementation details (fixed 2026-10-17, after format checks on the real data, before any P&L)
+
+**Format facts found with the key.** These came from record timestamps and value counts only; no P&L was computed.
+- **Key:** `apiRestrictions` shows reading only. Spot / margin trading, futures, withdrawals and transfers are all off; there is no IP restriction.
+- **Depth:** the history reaches 2020-09-30 for BTC.
+- **Cadence:** one record a day at 00:00 UTC through 2023-02. From **2023-03-01** there is also a record at every intraday rate change (BTC 48–101 distinct values a month, TRB 474). No truncation was seen, with up to 550 records per 30-day request.
+- **Not-listed windows:** HTTP 400 `-11027 asset … is not supported` is returned **per window**. It comes back for any window before the asset joined cross margin
+  (1INCH, ACH, AGLD in 2020-10; 0G, ACE, AEVO also in 2023-06), and for every window of an asset never on margin (CARV, BWET). Such a window has no records,
+  so the asset is not borrowable in it. (First found as a bug: the fetcher stopped an asset's fetch at its first `-11027`; corrected and re-fetched before any
+  P&L.)
+- **Removed assets keep a frozen rate.** An asset taken off cross margin keeps a daily record whose value no longer changes:
+  - SRM, BTS, ANC: one value a month through 2026-09;
+  - WAVES: frozen from 2025;
+  - FTT: frozen 2023–24, live again 2025.
+
+  So the registered B ("a rate exists") would also count delisted assets as borrowable.
+- **Calibration** on the 379 assets of the 2026-10-05 cross-margin list that have a history (last 30 days):
+  - 6 (1.6 %) kept one value for all 30 days: AERO, ESP, MARSCOIN, RE, WBETH, 牛来, which are pegged or newly listed.
+  - WAVES, SRM, BTS and ANC kept one value; FTT, TRB and MANA changed 193–474 times.
+  - A rule based on intraday activity is worse: 15 % of listed assets went more than 7 days without an intraday change.
+
+**Amended B (primary).** B[d, j] = a rate exists on day d (the registered rule) **and** the asset is not frozen.
+- Frozen applies from 2023-03-31, 30 days into the intraday regime: every record in [d − 30 d, d) has the same value.
+- Before 2023-03-31 a freeze cannot be seen, because rates then changed rarely even for BTC. An asset taken off margin while its spot pair kept trading therefore counts as
+  borrowable in that period; row (b) bounds this.
+- The registered rule is reported as **row (f), "rate exists"**. The verdict uses the amended primary, and the report states whether rows (b) and (f) land in the same
+  tier.
+
+**Other details.**
+- **Windows:** [2020-10-01 + 30k days, + 30 d − 1 ms], 74 windows to 2026-09-30, plus one window 2026-10-01 → 2026-10-15 used only for the snapshot cross-check.
+- **Errors:** a `-11027` reply is cached for its window as a window without records, and the fetch continues; an asset with every window `-11027` is never
+  borrowable. 418 / 429 / 5xx replies and network errors are retried with backoff. At most 5 requests a second across threads.
+- **Day rate and timing:** the day rate uses records stamped in [d, d + 1 d) UTC, and a position held over (d, d + 1] pays r[d]. Borrowability at d uses day d's
+  records; the daily 00:00 record is known at the decision time.
+- **Window end:** 2026-08-30, as registered. The archive now runs to 2026-09-30; the later days are not used.
+- **Row (c):** uses the saved R9 snapshot (`harness_xsec/r9_borrow_snapshot.json`, 2026-10-06), so that it reproduces R9 S2. Row (b) uses the same list.
+- **Assets:** the base assets of coins with elig ∧ FUND7 ≤ −0.03 % on at least one day of the window, computed from the R5 panels.
+
+### Q1 — squeeze risk from positioning (`metrics` archive), aimed at the short-book tail
+
+**Facts fixed before writing (listings and schemas only; no prices, returns or pumps looked at).**
+- `data.binance.vision/data/futures/um/daily/metrics/<SYM>/<SYM>-metrics-<YYYY-MM-DD>.zip`. Daily files only (there is no monthly dataset).
+  - Columns `create_time, symbol, sum_open_interest, sum_open_interest_value, count_toptrader_long_short_ratio, sum_toptrader_long_short_ratio,
+    count_long_short_ratio, sum_taker_long_short_vol_ratio`.
+  - 5-minute rows; every column filled on the five days sampled (2020-09 → 2026-10).
+- **Coverage.**
+  - 1,038 symbols. BTCUSDT from 2020-09-01; ETH, SOL and DOGE from 2021-12-01; no missing days in those four listings.
+  - Delisted contracts are kept: SRM, LUNA, FTT, WAVES, MATIC, FTM, ANC, BTS, RNDR, OCEAN, AGIX, EOS and MKR were checked.
+  - 375 of the 376 symbols ever in the R4 top-40 have a directory. LENDUSDT, delisted in 2020, has none.
+- **Quirks.**
+  - The 2020 files hold duplicate rows (576 a day).
+  - Recent files are not sorted by `create_time`.
+  - Files continue for months after a delisting.
+  - One stray key exists (`MATICUSDT-metrics-1993.zip`).
+
+  Rule: keys must match `-metrics-YYYY-MM-DD.zip`; rows are de-duplicated on `create_time` and sorted.
+- **Column meanings (checked against REST below):**
+  - `count_long_short_ratio` = global account long/short ratio;
+  - `sum_toptrader_long_short_ratio` = top-trader position ratio;
+  - `count_toptrader_long_short_ratio` = top-trader account ratio;
+  - `sum_taker_long_short_vol_ratio` = taker buy/sell volume ratio;
+  - `sum_open_interest` = open interest in coin units.
+
+**Hypothesis.**
+- The single-coin short books lost their median gains to a few pumps:
+  - R4 `RVOL30` H 1: median +22.6 bp/day, mean −7.8;
+  - N5: median +14.6 % per event, mean −3.8 %, with COAI +3,653 %.
+
+  N1's losses were market-wide alt rallies instead; Q1 does not address those.
+- A squeeze needs fuel: leveraged positions that must be closed. So a coin whose open interest has grown, and whose accounts lean short relative to its own history,
+  is more likely to pump in the next week than a coin with the same volatility and funding.
+
+**Score (signs fixed by the mechanism; no fitting, no tuning).** At day d 00:00 UTC, from the last row with `create_time` ≤ d − 10 min:
+- C1 = log(OI[d] / OI[d − 7 d]), where OI = `sum_open_interest`. It is in coin units, so price moves do not drive it.
+- C2 = −z30(`count_long_short_ratio`): the coin's value minus the mean of its previous 30 daily values, divided by their sd. It needs ≥ 20 of the 30 values.
+- **S** = mean of the cross-sectional percentile ranks of C1 and C2 within the day's universe (coins with both defined).
+- Information only:
+  - each component alone;
+  - the top-trader minus global divergence, z30(`sum_toptrader_long_short_ratio`) − z30(`count_long_short_ratio`);
+  - z30 of the 24 h mean taker ratio.
+
+**Stage A — does S predict pumps beyond volatility and funding? (primary)**
+- **Grid.** Mondays at 00:00 UTC, **2022-01-03 → 2026-08-24 (243 weeks)**, giving non-overlapping 7-day windows per coin. Forward block: Mondays from 2026-08-31 whose
+  window is inside the archive, reported separately.
+- **Universe.** The point-in-time top 100 by 30-day quote volume among R4-eligible perps, minus BTC and the TradFi / index perps (N5 tags). A coin-week without S is
+  dropped and counted.
+- **Label.** Pump = the highest 1 h high in the next 168 hours is ≥ 1.5 × the close at entry. Information labels: close-to-close 7-day return ≥ +50 %; thresholds of
+  +30 % and +100 %.
+- **Strata.** Each Monday, RVOL30 quintiles × FUND7 terciles within the universe (R4 definitions), giving 15 cells. In each cell, flag the round(n/3) coins with the
+  highest S.
+- **Statistic.** **Lift** = pumps flagged / pumps expected to be flagged. Each pump adds round(n/3)/n of its cell to the expectation. Lift 1 means no information
+  beyond volatility and funding.
+- **Inference.**
+  - Bootstrap over weeks: 10,000 draws, seed 0.
+  - Permutation null: shuffle S within each (week, cell), 2,000 draws.
+- **Reported.** Lift by year; unstratified AUC of S, RVOL30, −FUND7 and each component; counts of pumps and coin-weeks.
+
+**Stage A PASS (all required).**
+1. Lift ≥ 1.20, with the bootstrap 95 % CI lower bound > 1.0.
+2. Permutation percentile ≥ 97.5.
+3. Lift > 1 in ≥ 4 of the 5 calendar years 2022–2026.
+
+**Stage B — does the filter fix a registered short book? (run only if stage A passes)**
+- **Book.** R4 `RVOL30`, H = 7, exactly as registered:
+  - top-40 universe;
+  - long the 8 lowest-RVOL30 coins, short the 8 highest, equal weight;
+  - 7 staggered sub-books;
+  - 4.5 bp per side, funding as P&L;
+  - delisted coins closed at their last price.
+
+  R4 OOS: net −7.8 bp/day. The horizon matches the 7-day label.
+- **Filter.** Each day, flag the coins in the top third of S within the top-40 universe. The short leg becomes the 8 highest-RVOL30 *unflagged* coins; the long leg is
+  unchanged. A coin with no S is not flagged.
+- **Window.** 2022-01-01 → 2026-08-30; forward days reported separately.
+- **Null.** Each day, flag the same number of coins at random and apply the same replacement rule (500 draws, seed 0). Information arm: flag by most-negative FUND7
+  instead of S.
+- **Stage B PASS (all required).**
+  1. Paired improvement (filtered − unfiltered daily net) with NW t ≥ 2, and above the 97.5th percentile of the random-flag null.
+  2. Filtered book net > 0 with NW t ≥ 2.
+  3. The filtered book's worst 1 % of days is less severe than the unfiltered book's.
+  4. Filtered net positive in ≥ 3 of the 4 years 2022–2025.
+  5. Filtered net > 0 with the 1 h lag.
+
+**Tests before the real run.**
+- The zip reader handles the quirks (duplicates, unsorted rows, stray keys).
+- Known-at rule: no row after d − 10 min moves anything at d.
+- Units of z30 and the ranks.
+- Leak test: scrambling metrics and prices after d leaves S and the flags at ≤ d unchanged.
+- Null worlds (≥ 10) give lift ≈ 1 and pass at most once.
+- A planted world where pumps follow high C1 and low global L/S, at fixed volatility and funding, passes stage A.
+- A world where pumps follow volatility only fails stage A (lift ≈ 1).
+- Stage B equivalence: with no coin flagged, the book reproduces R4 `RVOL30` H 7 exactly.
+
+**Check on the real data before scoring.** Compare 30 days of archive rows with the REST endpoints (`globalLongShortAccountRatio`, `topLongShortPositionRatio`,
+`topLongShortAccountRatio`, `takerlongshortRatio`, `openInterestHist`, period 5m) for BTCUSDT and two alts. If `count_long_short_ratio` does not match the global
+account ratio, or `sum_open_interest` does not match open interest, stop and re-register C1 / C2 before computing any score.
+
+**Power, stated before the run.**
+- **Stage A.** About 100 coins × 243 weeks ≈ 24,000 coin-weeks. The pump base rate has not been looked at; at 1–3 % it gives roughly 240–730 pumps. With 400 pumps the
+  SE of the flagged share is about √(⅓ · ⅔ / 400) ≈ 2.4 points, more with clustering. So a lift of 1.20 (40 % vs 33 %) is at the edge of detection, and 1.35 is clear.
+- **Stage B.** If the paired daily difference has sd ≈ 1.5 %, about 1,700 days give SE ≈ 4 bp/day before the NW correction. The filtered book's own daily sd is about
+  5–6 %, so "net > 0 with NW t ≥ 2" needs roughly +25 bp/day. That is the binding criterion, and its prior is low.
+
+**Verdicts.**
+- **Stage A fails → Q1 DEAD.** Positioning does not predict weekly pumps beyond volatility and funding.
+- **Stage A passes, stage B fails → risk information only.** S can size or skip the shorts of a future book; it is not a strategy.
+- **Both pass → a forward paper ledger** of the filtered book (a separate registration); no money before it scores. Stage B's in-sample days were already seen
+  through R4, so stage B alone is not a trading result.
+
+**Prior.** Stage A moderate: crowding before squeezes is widely described, but funding already carries much of it. Stage B low.
+
+### Status (2026-10-17)
+
+- Pre-registered only. The §0 WebSocket fix is applied and was checked live (above).
+- **R9-H** waits for the user's read-only key.
+- **Q1** next: a `metrics` fetcher with the REST cross-check, `harness_xsec/squeeze.py` + `test_squeeze.py` (synthetic worlds), then `run_q1.py`.
+- Q1's daily files are about 1–2 × 10⁵ requests (every coin-day in the top-100 from 2021-12, plus the 30-day lookbacks). Fetch them resumably, with a few threads.

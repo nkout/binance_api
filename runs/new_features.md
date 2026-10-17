@@ -45,6 +45,8 @@ So the sources below are meant as inputs for **4 h to daily** directional work, 
 
 ## 0. Fix first: the liquidation stream has been dead since 2026-04-23
 
+*Status 2026-10-17: applied to the three lines below and checked live. The legacy `/ws/` path delivered nothing. The routed path delivered `markPrice` every 3 s (its default rate) and 54 of the 56 `forceOrder` events that `!forceOrder@arr` showed on the same 40 perps in 3 minutes. The pre-registrations that follow this review are Round 9 in `next_signal_ideas.md`.*
+
 Binance split the USDⓈ-M futures WebSocket into routed base URLs, and the legacy URLs were retired on 2026-04-23:
 
 - `/public` serves `@depth` and `@bookTicker`.
