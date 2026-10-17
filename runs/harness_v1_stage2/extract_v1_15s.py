@@ -1,8 +1,9 @@
 """Stream the v1 monthly tars into ONE compact 15 s table for the stage-2 direction probe.
 
 Reads ~50 of the 784 columns, dedupes on spot_timestamp across collector-instance handoffs,
-maps the dead-REST sentinel (-1) to NaN, casts to float32 and writes a parquet that is small
-enough to put on Google Drive for the Colab notebook `btc_v1_stage2_probe.ipynb`.
+maps the dead-REST sentinel (-1) and the dead-stream liquidation zeros (liq_cutoff.py) to NaN,
+casts to float32 and writes a parquet that is small enough to put on Google Drive for the
+Colab notebook `btc_v1_stage2_probe.ipynb`.
 
 Local, CPU, ~10-15 min, peak RAM ~2 GB.
 Usage: python extract_v1_15s.py [--months 2512,2601]   (default: all months)
@@ -10,6 +11,8 @@ Usage: python extract_v1_15s.py [--months 2512,2601]   (default: all months)
 """
 import argparse, glob, io, os, sys, tarfile, time
 import numpy as np, pandas as pd
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+from liq_cutoff import mask_dead_liquidations
 
 DATA = "/home/nkout/projects/binance_api/data/v1_year"
 OUT = os.path.join(DATA, "v1_15s.parquet")
@@ -75,6 +78,8 @@ def main():
     for c in OPT:
         raw.loc[raw[c] == -1, c] = np.nan
     raw.loc[raw["opt_open_interest_sample"] <= 0, "opt_open_interest_sample"] = np.nan
+    # liquidations read 0 while the forceOrder stream was dead (liq_cutoff.py) -> NaN
+    mask_dead_liquidations(raw, raw["spot_timestamp"])
     for c in ["future_bid_close", "future_ask_close"]:
         raw.loc[raw[c] <= 0, c] = np.nan
     raw = raw.dropna(subset=["future_bid_close", "future_ask_close"])

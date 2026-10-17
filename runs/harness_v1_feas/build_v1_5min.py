@@ -8,6 +8,8 @@ Runs on a laptop: ~1,925 files, peak RAM ~500 MB.
 """
 import tarfile, io, os, glob, re, sys, time
 import numpy as np, pandas as pd
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+from liq_cutoff import dead_mask, mask_dead_liquidations
 
 DATA = "/home/nkout/projects/binance_api/data/v1_year"
 OUT  = os.path.join(DATA, "v1_5min.pkl")
@@ -71,11 +73,17 @@ def main():
           f"({before-len(raw):,} overlapping rows from instance handoffs)")
 
     raw['bar'] = (raw['spot_timestamp'] // BAR) * BAR
+    # liquidations read 0 while the forceOrder stream was dead (liq_cutoff.py) -> NaN
+    mask_dead_liquidations(raw, raw['spot_timestamp'])
     agg = {c: 'last' for c in LAST}
     agg.update({c: 'sum' for c in SUM})
     agg.update({c: 'mean' for c in MEAN})
     agg['spot_timestamp'] = 'count'
     g = raw.groupby('bar').agg(agg).rename(columns={'spot_timestamp': 'n_ticks'})
+    # a bar with any dead tick has no liquidation sum (the 'sum' above would read it as 0)
+    dead = pd.Series(dead_mask(raw['spot_timestamp']), index=raw.index).groupby(raw['bar']).any()
+    LIQ = ['opt_long_force_exit_qty_sum', 'opt_short_force_exit_qty_sum']
+    g.loc[dead[dead].index, LIQ] = np.nan
 
     # a 5-min bar should hold 20 ticks at 15s; keep only bars that are mostly complete
     full = (g['n_ticks'] >= 15).sum()

@@ -15,6 +15,8 @@ Two arms, because funding and liquidations die on 2026-04-24:
 """
 import os, sys, numpy as np, pandas as pd
 from scipy.stats import spearmanr
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+from liq_cutoff import mask_dead_liquidations
 
 DATA = "/home/nkout/projects/binance_api/data/v1_year/v1_5min.pkl"
 BARS_H, H_FWD = 12, 48          # 12 bars = 1h ; 48 bars = 4h horizon
@@ -30,6 +32,8 @@ def zs(s, win):
 
 
 def build(df):
+    # a v1_5min.pkl built before liq_cutoff.py holds 0, not NaN, where the forceOrder stream was dead
+    df = mask_dead_liquidations(df.copy(), df.index)
     d = pd.DataFrame(index=df.index)
     mid = (df['future_bid_close'] + df['future_ask_close']) / 2
     smid = (df['spot_bid_close'] + df['spot_ask_close']) / 2

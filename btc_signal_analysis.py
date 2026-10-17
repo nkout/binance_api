@@ -26,6 +26,8 @@ import matplotlib.gridspec as gridspec
 from matplotlib.colors import LinearSegmentedColormap
 from datetime import datetime, timedelta
 
+from liq_cutoff import mask_dead_liquidations
+
 try:
     from sklearn.feature_selection import mutual_info_classif
     from sklearn.linear_model import LogisticRegression
@@ -296,6 +298,9 @@ def prepare(df: pd.DataFrame, threshold: float, horizon: int = 1) -> pd.DataFram
     for col in opt_cols:
         df[col] = df[col].replace(-1, np.nan)
 
+    # Liquidation columns read 0 while the forceOrder stream was dead -> NaN there (liq_cutoff.py)
+    mask_dead_liquidations(df, df['spot_timestamp'])
+
     # ── Close price of each window ─────────────────────────────────────────
     # Use the closing bid/ask of the futures bar — the last snapshot price
     # inside that 15-second window. Falls back to median if close is missing.
@@ -376,9 +381,10 @@ def prepare(df: pd.DataFrame, threshold: float, horizon: int = 1) -> pd.DataFram
 
     # Liquidation flag: binary — did any forced liquidation happen this bar?
     # Liquidations are impactful but rare; treat as binary not quantity.
-    liq_long  = df.get('opt_long_force_exit_qty_sum',  pd.Series(0, index=df.index))
-    liq_short = df.get('opt_short_force_exit_qty_sum', pd.Series(0, index=df.index))
-    df['liq_flag'] = ((liq_long + liq_short) > 0).astype(float)
+    # NaN where liquidations were not collected (missing columns or a dead stream).
+    liq_long  = df.get('opt_long_force_exit_qty_sum',  pd.Series(np.nan, index=df.index))
+    liq_short = df.get('opt_short_force_exit_qty_sum', pd.Series(np.nan, index=df.index))
+    df['liq_flag'] = ((liq_long + liq_short) > 0).astype(float).where(liq_long.notna() & liq_short.notna())
 
     # ── Intra-bar price structure ────────────────────────
 
@@ -1990,6 +1996,12 @@ def main():
     section("Preparing data")
     df = prepare(df, args.threshold, args.horizon)
     features = list(FEATURE_DEFS.keys())
+
+    # A partly-live liq_flag would make the later dropna() discard every row without liquidation data
+    if df['liq_flag'].notna().any() and df['liq_flag'].isna().any():
+        print(f"  liq_flag: liquidation data on only {df['liq_flag'].notna().mean():.0%} of rows -- dropped "
+              f"(restrict --days to the live period to use it)")
+        df['liq_flag'] = np.nan
 
     available = [f for f in features if f in df.columns and df[f].notna().sum() > 100]
     dropped   = [f for f in features if f not in available]
