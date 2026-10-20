@@ -24,7 +24,7 @@ Standalone state doc. Start here, then `next_signal_ideas.md` (Rounds 9–10: pr
 2. **Run v6 with the same options as before:** `python binance_live_orderbook_v6.py --window-sec=5`. No API key and no
    environment variables; every endpoint is public. v6 writes the same schema-5 bars as v4/v5 plus one trailing column,
    `opt_force_order_live`, and a raw event stream (`--no-events` gives bars only).
-   - Readers use liquidations only from v6 bars, so a v1–v5 collector on the fixed route would collect them for nothing.
+   - v1–v5 all still use the dead route and write 0 in every liquidation column; readers treat those zeros as missing.
 3. **Stop the old process and start v6.** Python loads the code at start, so a process left running keeps writing zeros.
 4. **Check it is live.**
    - **At start:** the log shows `Connected to force exit stream wss://fstream.binance.com/market/stream?streams=btcusdt@forceOrder/btcusdt@markPrice@1s`,

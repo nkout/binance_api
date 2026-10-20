@@ -289,7 +289,7 @@ async def poll_open_interest(future_symbol, buffer):
                 buffer.append(("open_interest", open_interest))
 
 async def subscribe_force_close(future_symbol, buffer):
-    url = f'wss://fstream.binance.com/market/ws/{future_symbol.lower()}@forceOrder'
+    url = f'wss://fstream.binance.com/ws/{future_symbol.lower()}@forceOrder'
 
     while True:
         try:
@@ -315,7 +315,7 @@ async def subscribe_force_close(future_symbol, buffer):
             await asyncio.sleep(2)
 
 async def subscribe_spread(future_symbol, buffer):
-    url = f"wss://fstream.binance.com/market/ws/{future_symbol.lower()}@markPrice"
+    url = f"wss://fstream.binance.com/ws/{future_symbol.lower()}@markPrice"
 
     while True:
         try:
