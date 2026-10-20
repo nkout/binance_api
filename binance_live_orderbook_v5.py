@@ -541,7 +541,7 @@ async def poll_open_interest(future_symbol, buffer):
 
 
 async def subscribe_force_close(future_symbol, buffer):
-    url = f'wss://fstream.binance.com/market/ws/{future_symbol.lower()}@forceOrder'
+    url = f'wss://fstream.binance.com/ws/{future_symbol.lower()}@forceOrder'
     while True:
         try:
             async with websockets.connect(url, **ws_connect_kwargs) as ws:
@@ -586,9 +586,7 @@ async def fetch_premium_index(symbol):
     # never delivers a message -- the handshake succeeds, so it logs
     # "Connected" while every mark-price column stays at the -1 sentinel.
     # REST premiumIndex carries the same fields, so poll it like open
-    # interest and long/short ratio. (Cause, found 2026-10-17: Binance retired
-    # the legacy /ws/ path for /market streams on 2026-04-23; the stream works
-    # at wss://fstream.binance.com/market/ws/<symbol>@markPrice.)
+    # interest and long/short ratio.
     url = f'https://fapi.binance.com/fapi/v1/premiumIndex?symbol={symbol.upper()}'
     attempt = 1
     while True:

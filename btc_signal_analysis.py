@@ -181,6 +181,7 @@ COLS_NEEDED_BASE = {
     'opt_remaining_time_sample',
     'opt_long_force_exit_qty_sum',
     'opt_short_force_exit_qty_sum',
+    'opt_force_order_live',          # v6 collector: 1 = liquidation columns are data (liq_cutoff.py)
 
     # Sub-bar trade sequencing (new collector only)
     'future_first_trade_side', 'future_last_trade_side',

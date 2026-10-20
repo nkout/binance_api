@@ -1,6 +1,6 @@
 """
-Aggregate schema-5 collector bars (binance_live_orderbook_v4.py output, out5.*
-files) into wider bars, e.g. 5s -> 15s:
+Aggregate schema-5 collector bars (binance_live_orderbook_v4.py to _v6.py output,
+out5.* files) into wider bars, e.g. 5s -> 15s:
 
     python aggregate_bars.py --target-sec 15 -o out5.w15.agg.csv out5.w5.*.csv
     python aggregate_bars.py --target-sec 60 --require-full -o day.csv out5.w15.*.csv.gz
@@ -14,7 +14,10 @@ Exact under aggregation: every sum/count/min/max/open/close, vwap, price_diff,
 mid_std (Chan's parallel-variance formula over mid_m2), mid_rv (boundary terms
 from close/open mids), mid_flips (boundary signs), max_buy/sell_run_qty (runs
 stitched across bar boundaries via lead/tail runs), largest/first/last trade
-side, and all optional sums/maxes.
+side, all optional sums/maxes, and v6's opt_force_order_live (minimum: the
+liquidation feed was live for the whole merged bar only if it was in every
+source bar). Inputs must share one column set, so v6 files (one extra column)
+are aggregated separately from v4/v5 files.
 
 Approximate by design (would need raw samples): every *_median / *_p90 column
 (merged as samples-weighted median of sub-bar medians), the early/late trade
@@ -45,6 +48,7 @@ OPT_SAMPLES = ['est_funding_rate_sample', 'funding_rate_sample', 'index_price_sa
                'long_short_ratio_sample', 'mark_price_sample', 'open_interest_sample',
                'remaining_time_sample', 'spread_sample']
 OPT_OCM = ['eth_mid']
+LIVE_COL = 'opt_force_order_live'  # v6 only
 
 
 def weighted_median(values, weights):
@@ -318,6 +322,8 @@ def merge_optional(out, g):
             out[f'opt_{name}_open'] = -1
             out[f'opt_{name}_close'] = -1
             out[f'opt_{name}_median'] = -1
+    if LIVE_COL in g.columns:
+        out[LIVE_COL] = int(g[LIVE_COL].min())
 
 
 def merge_group(g, cols, out_ts):

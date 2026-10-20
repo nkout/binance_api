@@ -1,7 +1,9 @@
 """Tests for liq_cutoff.py and the readers that use it (btc_signal_analysis.prepare, feas_4h.build).
 
-Synthetic: the mask boundaries, NaN times, a pinned LIQ_LIVE_FROM, only liquidation columns change, the restart warning.
-Real data when present: the v1 year places LIQ_DEAD_FROM at the stream's death; the local out5 files are all masked.
+Synthetic: the time rule (v1-v5 rows), the live column (v6 rows), both mixed, only liquidation columns change, the
+warning for liquidations without the live column.
+Real data when present: the v1 year places LIQ_DEAD_FROM at the stream's death; the local out5 files are all masked;
+btc_signal_analysis loads the live column from a v6-style file; aggregate_bars.py merges it as the minimum.
 """
 import contextlib, glob, io, os, sys
 import numpy as np, pandas as pd
@@ -24,33 +26,45 @@ def masked(df, ts):
 
 
 D = L.LIQ_DEAD_FROM
-check("dead_mask: live before LIQ_DEAD_FROM, dead from it on (LIQ_LIVE_FROM None), NaN time dead",
+F1 = L.FIX_DAY
+check("dead_mask, no live column: live before LIQ_DEAD_FROM, dead from it on, NaN time dead",
       list(L.dead_mask([D - 15, D, D + 86400 * 365, np.nan])) == [False, True, True, True])
-L.LIQ_LIVE_FROM = L.FIX_DAY + 3600
-check("dead_mask: a pinned LIQ_LIVE_FROM makes rows from it on live again",
-      list(L.dead_mask([D - 15, L.FIX_DAY, L.FIX_DAY + 3600, L.FIX_DAY + 7200])) == [False, True, False, False])
-L.LIQ_LIVE_FROM = None
+check("dead_mask, live column: 1 is data, 0 is not, NaN (no column in that file) falls back to the time rule",
+      list(L.dead_mask([D - 15, F1 + 5, F1 + 10, F1 + 15, F1 + 20], [np.nan, 1, 0, np.nan, 1.0]))
+      == [False, False, True, True, False])
 
-ts = np.array([D - 30, D - 15, D, D + 15, L.FIX_DAY + 60])
-df = pd.DataFrame({"spot_timestamp": ts, "opt_long_force_exit_qty_sum": [0.5, 0.0, 0.0, 0.0, 2.0],
-                   "opt_short_force_exit_cnt_sum": [1, 0, 0, 0, 3], "opt_open_interest_sample": [1.0, 2.0, 3.0, 4.0, 5.0],
-                   "future_buy_qty": [7.0, 8.0, 9.0, 10.0, 11.0]})
+liq = ["opt_long_force_exit_qty_sum", "opt_short_force_exit_cnt_sum"]
+ts = np.array([D - 30, D - 15, D, D + 15, F1 + 60])
+df = pd.DataFrame({"spot_timestamp": ts, liq[0]: [0.5, 0.0, 0.0, 0.0, 2.0], liq[1]: [1, 0, 0, 0, 3],
+                   "opt_open_interest_sample": [1.0, 2.0, 3.0, 4.0, 5.0], "future_buy_qty": [7.0, 8.0, 9.0, 10.0, 11.0]})
 before = df.copy()
 out, err = masked(df, df.spot_timestamp)
-liq = ["opt_long_force_exit_qty_sum", "opt_short_force_exit_cnt_sum"]
-check("mask: liquidation columns (float and int) NaN on dead rows, unchanged on live rows",
+check("mask, v1-v5 rows: liquidation columns (float and int) NaN from LIQ_DEAD_FROM on, unchanged before",
       out[liq].iloc[2:].isna().all().all() and out[liq].iloc[:2].astype(float).equals(before[liq].iloc[:2].astype(float)))
 check("mask: other columns untouched", out.drop(columns=liq).equals(before.drop(columns=liq)))
-check("mask: warns when rows after the fix hold liquidations while LIQ_LIVE_FROM is None", "LIQ_LIVE_FROM" in err, err.strip()[:80])
-_, err2 = masked(pd.DataFrame({"opt_long_force_exit_qty_sum": [3.0]}), [D + 4 * 86400])
+check("mask: warns when rows without the live column hold liquidations after the fix (a fixed v1-v5 collector)",
+      L.LIVE_COL in err and "v6" in err, err.strip()[:80])
+_, err2 = masked(pd.DataFrame({liq[0]: [3.0]}), [D + 4 * 86400])
 check("mask: no warning for the dead-era stragglers (2026-04-27)", err2 == "")
-L.LIQ_LIVE_FROM = int(L.FIX_DAY + 30)
-out3, err3 = masked(before.copy(), before.spot_timestamp)
-check("mask: with LIQ_LIVE_FROM pinned, post-restart liquidations are kept and nothing warns",
-      out3[liq].iloc[4].tolist() == [2.0, 3.0] and out3[liq].iloc[2:4].isna().all().all() and err3 == "")
-L.LIQ_LIVE_FROM = None
+
+v6 = pd.DataFrame({"spot_timestamp": F1 + 5 * np.arange(4), liq[0]: [0.0, 1.5, 2.0, 0.0], liq[1]: [0, 2, 1, 0],
+                   L.LIVE_COL: [1, 1, 0, 1], "future_buy_qty": [1.0, 2.0, 3.0, 4.0]})
+v6_before = v6.copy()
+out6, err6 = masked(v6, v6.spot_timestamp)
+check("mask, v6 rows: kept where the live column is 1 (zeros too), NaN where it is 0, no warning",
+      out6[liq[0]].tolist()[:2] == [0.0, 1.5] and out6[liq[0]].iloc[3] == 0.0 and out6[liq].iloc[2].isna().all()
+      and err6 == "")
+check("mask, v6 rows: the live column and the other columns untouched",
+      out6.drop(columns=liq).equals(v6_before.drop(columns=liq)))
+old = pd.DataFrame({"spot_timestamp": [D - 15, D + 15], liq[0]: [4.0, 0.0], liq[1]: [1, 0], "future_buy_qty": [5.0, 6.0]})
+mix = pd.concat([old, v6_before], ignore_index=True)       # v5 file + v6 file: the v5 rows get NaN in the live column
+outm, errm = masked(mix, mix.spot_timestamp)
+check("mask, v5 and v6 files concatenated: v5 rows by time, v6 rows by the live column",
+      outm[liq[0]].iloc[0] == 4.0 and np.isnan(outm[liq[0]].iloc[1]) and outm[liq[0]].iloc[3] == 1.5
+      and np.isnan(outm[liq[0]].iloc[4]) and errm == "")
 check("mask: a frame without liquidation columns is returned unchanged",
       L.mask_dead_liquidations(pd.DataFrame({"a": [1]}), [D]).equals(pd.DataFrame({"a": [1]})))
+check("the live column is not itself a liquidation column", L.LIVE_COL not in L.liq_columns(v6_before))
 
 # feas_4h.build: liquidation features NaN on dead bars, finite on live bars
 import feas_4h as F
@@ -97,14 +111,40 @@ if files:
         raw = B.load_files(files[:3])
         prep = B.prepare(raw.copy(), 0.0)
     check("btc_signal_analysis: liq_flag NaN on every row of the dead-era out5 files", prep["liq_flag"].isna().all(), f"{len(prep)} rows")
-    L.LIQ_LIVE_FROM = int(pd.to_numeric(raw.spot_timestamp).min())       # pretend these rows were collected live
-    raw2 = raw.copy(); raw2["opt_long_force_exit_qty_sum"] = 0.0
-    raw2.loc[raw2.index[::50], "opt_long_force_exit_qty_sum"] = 1.0
-    with contextlib.redirect_stdout(io.StringIO()):
-        prep2 = B.prepare(raw2, 0.0)
-    L.LIQ_LIVE_FROM = None
-    check("btc_signal_analysis: on live rows liq_flag is 0/1 with no NaN",
-          prep2["liq_flag"].notna().all() and set(prep2["liq_flag"].unique()) == {0.0, 1.0})
+    # a v6-style file: a dead-era out5 file plus the trailing live column, with liquidations and not-live bars planted
+    import subprocess, tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        src = pd.read_csv(files[0], sep=";")
+        src["opt_long_force_exit_qty_sum"] = 0.0
+        src.loc[src.index[::50], "opt_long_force_exit_qty_sum"] = 1.0
+        src[L.LIVE_COL] = 1
+        src.loc[src.index[7::40], L.LIVE_COL] = 0
+        p6 = os.path.join(tmp, "out5.w5.vsixx.00000.261020.csv")
+        src.to_csv(p6, sep=";", index=False)
+        with contextlib.redirect_stdout(io.StringIO()):
+            raw6 = B.load_files([p6])
+            prep6 = B.prepare(raw6.copy(), 0.0)
+        check("btc_signal_analysis: load_files reads the live column from a v6 file", L.LIVE_COL in raw6.columns)
+        # prepare() keeps only features + dt, so look the live column up by bar time
+        lv = raw6.assign(dt=pd.to_datetime(raw6["spot_datetime"])).drop_duplicates("dt").set_index("dt")[L.LIVE_COL]
+        live = (prep6["dt"].map(lv) == 1).to_numpy()
+        check("btc_signal_analysis, v6 file: liq_flag 0/1 on live bars (the column overrides the date), NaN on the others",
+              set(prep6.loc[live, "liq_flag"].unique()) == {0.0, 1.0} and prep6.loc[~live, "liq_flag"].isna().all()
+              and (~live).sum() > 0)
+
+        agg = os.path.join(tmp, "agg15.csv")
+        r = subprocess.run([sys.executable, os.path.join(HERE, "aggregate_bars.py"), "--target-sec", "15", "-o", agg, p6],
+                           capture_output=True, text=True)
+        s2 = src.sort_values("spot_timestamp").drop_duplicates("spot_timestamp")
+        exp = s2.groupby(s2.spot_timestamp // 15 * 15)[L.LIVE_COL].min()
+        a15 = pd.read_csv(agg, sep=";") if r.returncode == 0 else None
+        check("aggregate_bars: a v6 file merges 5s -> 15s, same columns, live column = minimum of its source bars",
+              a15 is not None and list(a15.columns) == list(src.columns) and a15[L.LIVE_COL].tolist() == exp.tolist(),
+              (r.stderr or r.stdout).strip()[-200:])
+        r2 = subprocess.run([sys.executable, os.path.join(HERE, "aggregate_bars.py"), "--target-sec", "15", "-o", agg,
+                             files[0], p6], capture_output=True, text=True)
+        check("aggregate_bars: refuses to merge v5 and v6 files together (column mismatch)",
+              r2.returncode != 0 and "column mismatch" in r2.stderr, r2.stderr.strip()[-120:])
 else:
     print("skip out5 checks: no local collector files")
 

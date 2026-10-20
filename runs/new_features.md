@@ -45,7 +45,9 @@ So the sources below are meant as inputs for **4 h to daily** directional work, 
 
 ## 0. Fix first: the liquidation stream has been dead since 2026-04-23
 
-*Status 2026-10-17: applied to the three lines below and checked live. The legacy `/ws/` path delivered nothing. The routed path delivered `markPrice` every 3 s (its default rate) and 54 of the 56 `forceOrder` events that `!forceOrder@arr` showed on the same 40 perps in 3 minutes. The pre-registrations that follow this review are Round 9 in `next_signal_ideas.md`. The readers now treat the liquidation columns as missing (NaN) from 2026-04-23 17:03:30 UTC until the collector restart on the fixed code (`liq_cutoff.py`; `LIQ_LIVE_FROM` is still to be pinned).*
+*Status 2026-10-17: applied to the three lines below and checked live. The legacy `/ws/` path delivered nothing. The routed path delivered `markPrice` every 3 s (its default rate) and 54 of the 56 `forceOrder` events that `!forceOrder@arr` showed on the same 40 perps in 3 minutes. The pre-registrations that follow this review are Round 9 in `next_signal_ideas.md`. The readers now treat the liquidation columns as missing (NaN) from 2026-04-23 17:03:30 UTC (`liq_cutoff.py`).*
+
+*Update 2026-10-20: `binance_live_orderbook_v5.py` is back to its original code (dead route), as are v2–v4, and the fix lives in the new `binance_live_orderbook_v6.py`. v6 reads `forceOrder` together with a `markPrice@1s` heartbeat on one routed `/market/stream` connection. It writes one trailing column, `opt_force_order_live`: 1 when the feed was verified live for the whole bar. Readers take v6 liquidation values only where that column is 1, so no restart date is stored. In a live test, a copy pointed at the legacy path wrote 0 in every bar.*
 
 Binance split the USDⓈ-M futures WebSocket into routed base URLs, and the legacy URLs were retired on 2026-04-23:
 
